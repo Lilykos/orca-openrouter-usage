@@ -13,6 +13,14 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
 - Range (7d, 30d, All) and Cost or Tokens switches, with refresh on the right.
 - A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a daily budget is passed.
 
+## Install
+
+```
+orca plugin install Lilykos/orca-openrouter-usage
+```
+
+Orca shows what the plugin is allowed to do and asks you to approve it.
+
 ## Setup
 
 Open the panel and paste your management key; it is verified with OpenRouter before it is saved. The key is stored in the plugin's encrypted secrets (OS keyring) and never leaves the worker process; the panel never sees it. The Settings tab has: connection test, replace or disconnect the key, refresh interval, low-balance alert, daily budget, notifications, status bar item, and whether BYOK usage counts in spend.

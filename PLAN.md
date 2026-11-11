@@ -2,7 +2,7 @@
 
 A sidebar dashboard for [Orca](https://onorca.dev) that shows what you spend on OpenRouter: credits left, spend, tokens, models, and API keys. It is modelled on the look of **Usage Insights** (`etherll.usage-insights`, installed locally) and borrows the "ledger" ideas of the iOS **AI Token Usage Tracker** app.
 
-Status: v0.1.0 feature-complete and polished, running locally, not published. Reviewed (10 findings fixed, each with a regression test), 81 unit tests plus panel render, click-through and injection checks (`scripts/check-panel.mjs`, run in CI). Remaining: publish (repo, tag, catalog entry) and rotate the keys used in development.
+Status: v0.1.0 published (https://github.com/Lilykos/orca-openrouter-usage, tag `v0.1.0`, topic `orca-plugin`). Reviewed, with 81 unit tests plus panel render, click-through and injection checks (`scripts/check-panel.mjs`, run in CI). Install: `orca plugin install Lilykos/orca-openrouter-usage`.
 
 ## 1. Decisions so far
 

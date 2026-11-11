@@ -1,0 +1,277 @@
+import { test, assert } from 'orca/testing'
+// @ts-ignore node typings are not shipped with Orca's test kit
+import { readFileSync } from 'node:fs'
+import type { DayRow } from '../protocol'
+import {
+  buildReport,
+  filterRows,
+  normalizeActivity,
+  normalizeKeys,
+  rowCost,
+} from './report'
+
+const load = (name: string) =>
+  JSON.parse(readFileSync(new URL(`../../tests/fixtures/${name}`, import.meta.url), 'utf8'))
+
+const NOW = Date.parse('2026-11-10T12:00:00Z')
+const TODAY = '2026-11-10'
+
+const rawActivity: any[] = load('activity.json').data
+const rows = normalizeActivity(rawActivity)
+const keys = normalizeKeys(load('keys.json').data)
+const credits = { totalCredits: load('credits.json').data.total_credits, totalUsage: load('credits.json').data.total_usage }
+const snapshots: { t: number; totalUsage: number; totalCredits: number }[] = []
+
+const row = (over: Partial<DayRow> = {}): DayRow => ({
+  date: '2026-11-05',
+  model: 'm/a',
+  endpoint: 'e1',
+  usage: 1,
+  byokUsage: 0,
+  requests: 1,
+  prompt: 100,
+  completion: 10,
+  reasoning: 0,
+  cached: 50,
+  ...over,
+})
+
+const baseInput = (over: Partial<Parameters<typeof buildReport>[0]> = {}) => ({
+  rows,
+  keys,
+  keyRows: {} as Record<string, DayRow[]>,
+  credits,
+  snapshots,
+  now: NOW,
+  range: 'all' as const,
+  measure: 'cost' as const,
+  includeByok: false,
+  stale: null,
+  ...over,
+})
+
+test('normalizeActivity maps API fields to DayRow', () => {
+  const r = rows[0]
+  assert.equal(r.date, '2026-11-09')
+  assert.equal(r.model, 'deepseek/deepseek-v4.1-flash-1017')
+  assert.equal(r.endpoint, rawActivity[0].endpoint_id)
+  assert.equal(r.usage, rawActivity[0].usage)
+  assert.equal(r.byokUsage, rawActivity[0].byok_usage_inference)
+  assert.equal(r.requests, rawActivity[0].requests)
+  assert.equal(r.prompt, rawActivity[0].prompt_tokens)
+  assert.equal(r.completion, rawActivity[0].completion_tokens)
+  assert.equal(r.reasoning, rawActivity[0].reasoning_tokens)
+  assert.equal(r.cached, rawActivity[0].cached_tokens)
+  assert.equal(rows.length, rawActivity.length)
+})
+
+test('normalizeActivity tolerates missing fields', () => {
+  const [r] = normalizeActivity([{ date: '2026-11-01 00:00:00' }])
+  assert.deepEqual(
+    { ...r },
+    { date: '2026-11-01', model: '', endpoint: '', usage: 0, byokUsage: 0, requests: 0, prompt: 0, completion: 0, reasoning: 0, cached: 0 },
+  )
+})
+
+test('normalizeKeys maps to camelCase with nulls for absent values', () => {
+  const k = keys[0]
+  assert.equal(k.hash, load('keys.json').data[0].hash)
+  assert.equal(k.limit, null)
+  assert.equal(k.limitRemaining, null)
+  assert.equal(k.lastUsedAt, null)
+  assert.equal(k.usageDaily, 0)
+  assert.equal(typeof keys[2].usage, 'number')
+  assert.ok(keys[2].usage > 0)
+})
+
+test('7d keeps only the 7 completed days before today', () => {
+  const out = filterRows(rows, '7d', NOW)
+  assert.ok(out.length > 0)
+  for (const r of out) {
+    assert.ok(r.date >= '2026-11-03' && r.date < TODAY, r.date)
+  }
+})
+
+test('30d and all widen the window', () => {
+  const d7 = filterRows(rows, '7d', NOW).length
+  const d30 = filterRows(rows, '30d', NOW)
+  const all = filterRows(rows, 'all', NOW)
+  assert.ok(d7 <= d30.length)
+  assert.ok(d30.length <= all.length)
+  for (const r of d30) assert.ok(r.date >= '2026-10-11')
+  assert.equal(all.length, rows.length)
+})
+
+test('today never appears in rows, even if present in input', () => {
+  const extra = [...rows, row({ date: TODAY })]
+  for (const range of ['7d', '30d', 'all'] as const) {
+    assert.ok(filterRows(extra, range, NOW).every((r) => r.date !== TODAY))
+  }
+})
+
+test('byok toggle changes cost, not row count', () => {
+  const r = row({ usage: 2, byokUsage: 3 })
+  assert.equal(rowCost(r, false), 2)
+  assert.equal(rowCost(r, true), 5)
+
+  const data = [r]
+  const off = buildReport(baseInput({ rows: data, includeByok: false }))
+  const on = buildReport(baseInput({ rows: data, includeByok: true }))
+  assert.equal(off.tiles.spend, 2)
+  assert.equal(on.tiles.spend, 5)
+  assert.equal(off.models[0].requests, 1)
+  assert.equal(on.models[0].requests, 1)
+})
+
+test('daily bars are zero-filled for missing days', () => {
+  const report = buildReport(baseInput())
+  const stored = new Set(rows.map((r) => r.date))
+  const bars = report.daily.filter((b) => !b.partial)
+  assert.equal(bars[0].date, '2026-10-17')
+  assert.equal(bars[bars.length - 1].date, '2026-11-09')
+  assert.equal(bars.length, report.historyDays)
+  const gap = bars.find((b) => !stored.has(b.date))
+  assert.ok(gap, 'fixture has at least one gap day')
+  assert.equal(gap!.total, 0)
+  assert.ok(bars.every((b) => Object.values(b.byModel).every((v) => v >= 0)))
+})
+
+test('byModel keeps top 5 models plus other, summing to total', () => {
+  const report = buildReport(baseInput())
+  const keyNames = Object.keys(report.daily[0].byModel)
+  assert.equal(keyNames.length, 6)
+  assert.ok(keyNames.includes('other'))
+  for (const b of report.daily.filter((x) => !x.partial)) {
+    const sum = Object.values(b.byModel).reduce((s, v) => s + v, 0)
+    assert.ok(Math.abs(sum - b.total) < 1e-9, b.date)
+  }
+})
+
+test('partial today bar only for cost measure', () => {
+  const cost = buildReport(baseInput({ measure: 'cost' }))
+  const last = cost.daily[cost.daily.length - 1]
+  assert.equal(last.date, TODAY)
+  assert.equal(last.partial, true)
+  assert.equal(last.total, cost.tiles.today)
+  assert.deepEqual(last.byModel, { other: cost.tiles.today })
+
+  const tokens = buildReport(baseInput({ measure: 'tokens' }))
+  assert.ok(tokens.daily.every((b) => !b.partial))
+  assert.ok(tokens.daily.every((b) => b.date !== TODAY))
+})
+
+test('ranked lists sort by cost desc and costPerMTok is null without tokens', () => {
+  const report = buildReport(baseInput({ range: '30d' }))
+  assert.ok(report.models.length > 1)
+  for (let i = 1; i < report.models.length; i++) {
+    assert.ok(report.models[i - 1].cost >= report.models[i].cost)
+  }
+  const top = report.models[0]
+  assert.equal(top.costPerMTok, top.cost / ((top.prompt + top.completion) / 1e6))
+
+  const zero = buildReport(baseInput({ rows: [row({ prompt: 0, completion: 0 })] }))
+  assert.equal(zero.models[0].costPerMTok, null)
+})
+
+test('empty rows: report does not throw and nullable fields are null', () => {
+  const report = buildReport(baseInput({ rows: [], snapshots: [] }))
+  assert.equal(report.tiles.cacheHitRate, null)
+  assert.equal(report.tiles.avgCostPerRequest, null)
+  assert.equal(report.balance.burnPerDay, null)
+  assert.equal(report.balance.daysLeft, null)
+  assert.equal(report.historyDays, 0)
+  assert.deepEqual(report.heatmap, [])
+  assert.deepEqual(report.models, [])
+})
+
+test('cache hit rate and average cost per request', () => {
+  const report = buildReport(baseInput({ rows: [row({ prompt: 200, cached: 50, requests: 4, usage: 2 })] }))
+  assert.equal(report.tiles.cacheHitRate, 0.25)
+  assert.equal(report.tiles.avgCostPerRequest, 0.5)
+  assert.equal(report.mix.cachedPrompt, 50)
+  assert.equal(report.mix.uncachedPrompt, 150)
+})
+
+test('balance: remaining and burn over last 7 completed days', () => {
+  const report = buildReport(baseInput())
+  const from = '2026-11-03'
+  const sum = rows.filter((r) => r.date >= from && r.date < TODAY).reduce((s, r) => s + r.usage, 0)
+  const burn = sum / 7
+  assert.ok(Math.abs(report.balance.remaining - (credits.totalCredits - credits.totalUsage)) < 1e-9)
+  assert.ok(Math.abs(report.balance.burnPerDay! - burn) < 1e-9)
+  assert.ok(Math.abs(report.balance.daysLeft! - report.balance.remaining / burn) < 1e-9)
+})
+
+test('balance: zero burn gives daysLeft null', () => {
+  const old = [row({ date: '2026-10-01', usage: 5 })]
+  const report = buildReport(baseInput({ rows: old }))
+  assert.equal(report.balance.burnPerDay, 0)
+  assert.equal(report.balance.daysLeft, null)
+})
+
+test('buildReport does not mutate its inputs', () => {
+  const data = [row({ model: 'z' }), row({ model: 'y', date: '2026-11-04' })]
+  const snapshot = JSON.stringify({ data, keys, credits })
+  buildReport(baseInput({ rows: data }))
+  assert.equal(JSON.stringify({ data, keys, credits }), snapshot)
+})
+
+const kinfo = (over: Partial<(typeof keys)[number]> = {}) => ({ ...keys[0], hash: 'k1', usage: 10, lastUsedAt: '2026-11-09T10:00:00Z', ...over })
+
+test('key spend: lifetime for all, rolling sum of completed days for 7d/30d', () => {
+  const keyRows = {
+    k1: [
+      row({ date: '2026-11-09', usage: 1 }), // inside 7d
+      row({ date: '2026-11-02', usage: 2 }), // 8 days ago: 30d only
+      row({ date: TODAY, usage: 100 }), // today is never counted
+    ],
+  }
+  const spend = (range: 'all' | '7d' | '30d') =>
+    buildReport(baseInput({ keys: [kinfo()], keyRows, range })).keys[0].spend
+  assert.equal(spend('all'), 10)
+  assert.equal(spend('7d'), 1)
+  assert.equal(spend('30d'), 3)
+})
+
+test('key spend: null while a recently used key is unfetched, 0 for idle keys', () => {
+  const recent = buildReport(baseInput({ keys: [kinfo()], range: '30d' })).keys[0]
+  assert.equal(recent.spend, null)
+  const idle = buildReport(baseInput({ keys: [kinfo({ lastUsedAt: '2026-07-01T00:00:00Z' })], range: '30d' })).keys[0]
+  assert.equal(idle.spend, 0)
+  const unused = buildReport(baseInput({ keys: [kinfo({ usage: 0, lastUsedAt: null })], range: '7d' })).keys[0]
+  assert.equal(unused.spend, 0)
+})
+
+test('key spend honours the BYOK setting', () => {
+  const keyRows = { k1: [row({ date: '2026-11-09', usage: 1, byokUsage: 4 })] }
+  const spend = (includeByok: boolean) =>
+    buildReport(baseInput({ keys: [kinfo()], keyRows, range: '7d', includeByok })).keys[0].spend
+  assert.equal(spend(false), 1)
+  assert.equal(spend(true), 5)
+})
+
+test('heatmap has one point for every day from the first stored day, idle days at zero', () => {
+  const sparse = [
+    row({ date: '2026-11-02', usage: 1 }),
+    row({ date: '2026-11-05', usage: 2 }),
+    row({ date: '2026-11-09', usage: 3 }),
+  ]
+  const { heatmap } = buildReport(baseInput({ rows: sparse, range: 'all' }))
+  assert.deepEqual(
+    heatmap.map((h) => h.date),
+    ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09'],
+  )
+  assert.deepEqual(heatmap.map((h) => h.cost), [1, 0, 0, 2, 0, 0, 0, 3])
+  assert.deepEqual(buildReport(baseInput({ rows: [] })).heatmap, [])
+})
+
+test('models are ranked by the active measure, not always by cost', () => {
+  const data = [
+    row({ date: '2026-11-09', model: 'pricey', usage: 10, prompt: 100, completion: 0 }),
+    row({ date: '2026-11-09', model: 'cheap-but-huge', usage: 1, prompt: 9000, completion: 0 }),
+  ]
+  const names = (measure: 'cost' | 'tokens') =>
+    buildReport(baseInput({ rows: data, range: '7d', measure })).models.map((m) => m.name)
+  assert.deepEqual(names('cost'), ['pricey', 'cheap-but-huge'])
+  assert.deepEqual(names('tokens'), ['cheap-but-huge', 'pricey'])
+})

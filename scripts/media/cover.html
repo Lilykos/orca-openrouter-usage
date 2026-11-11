@@ -1,0 +1,36 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>cover</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1600px; height: 1000px; overflow: hidden; background: #0b1020; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  .cover { position: relative; width: 1600px; height: 1000px; color: #fff;
+    background: radial-gradient(70% 90% at 82% 28%, rgba(167,139,250,.55) 0%, rgba(167,139,250,0) 60%),
+                radial-gradient(60% 70% at 10% 100%, rgba(67,56,202,.45) 0%, rgba(67,56,202,0) 65%),
+                linear-gradient(125deg, #0b1020 0%, #1e1b4b 50%, #4338ca 100%); }
+  .art { position: absolute; left: 840px; top: 50%; transform: translateY(-50%); width: 680px; height: auto; }
+  .copy { position: absolute; left: 120px; top: 50%; transform: translateY(-50%); width: 760px; }
+  .eyebrow { font-size: 26px; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.7); margin-bottom: 28px; }
+  h1 { font-size: 128px; line-height: 1.0; letter-spacing: -.035em; font-weight: 700; }
+  p.tag { margin-top: 36px; font-size: 38px; line-height: 1.35; color: rgba(255,255,255,.82); max-width: 700px; }
+  .chips { margin-top: 56px; display: flex; flex-wrap: wrap; gap: 16px; }
+  .chip { font-size: 26px; padding: 12px 24px; border-radius: 999px; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.28); }
+</style></head>
+<body><div class="cover">
+  <svg class="art" viewBox="212 0 218 100" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <defs><linearGradient id="l" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#c7d2fe" stop-opacity=".35"/></linearGradient></defs>
+    <g fill="none" stroke="url(#l)" stroke-width="1.5" stroke-linecap="round">
+      <path d="M236 50 C 280 50, 292 14, 340 14"/><path d="M236 50 C 280 50, 292 38, 340 38"/>
+      <path d="M236 50 C 280 50, 292 62, 340 62"/><path d="M236 50 C 280 50, 292 86, 340 86"/>
+      <path d="M340 14 H 420 M340 38 H 420 M340 62 H 420 M340 86 H 420" stroke-opacity=".35" stroke-dasharray="1.5 4.5"/>
+    </g>
+    <g fill="#fff"><circle cx="236" cy="50" r="5" fill-opacity=".95"/><circle cx="236" cy="50" r="11" fill-opacity=".12"/>
+      <circle cx="236" cy="50" r="19" fill-opacity=".06"/>
+      <circle cx="340" cy="14" r="3.2"/><circle cx="340" cy="38" r="3.2" fill-opacity=".8"/><circle cx="340" cy="62" r="3.2" fill-opacity=".9"/><circle cx="340" cy="86" r="3.2" fill-opacity=".7"/></g>
+  </svg>
+  <div class="copy">
+    <div class="eyebrow">Orca plugin</div>
+    <h1>OpenRouter<br>Usage</h1>
+    <p class="tag">Credits left, spend, tokens, models and keys, at a glance in your sidebar.</p>
+    <div class="chips"><span class="chip">Credits &amp; burn rate</span><span class="chip">Models</span><span class="chip">API keys</span><span class="chip">Daily ledger</span></div>
+  </div>
+</div></body></html>

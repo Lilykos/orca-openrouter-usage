@@ -1,0 +1,17 @@
+name: panel checks
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  panel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Chrome is preinstalled on GitHub's Ubuntu runners.
+      - name: Check the panel and listing images
+        run: node scripts/check-panel.mjs
+      # The unit tests import `orca/testing`, which only the Orca CLI provides, so they run locally:
+      #   orca plugin test .

@@ -1,0 +1,154 @@
+{
+  "manifestVersion": 2,
+  "id": "openrouter-usage",
+  "name": "OpenRouter Usage",
+  "version": "0.1.0",
+  "description": "Keep an eye on your OpenRouter account from the sidebar: credits left and days of runway, spend and tokens by model and key, a daily ledger, low-balance alerts and a status bar item. Read-only, and your management key stays in the OS keyring.",
+  "author": {
+    "name": "Lilykos",
+    "url": "https://github.com/Lilykos"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Lilykos/orca-openrouter-usage",
+  "homepage": "https://github.com/Lilykos/orca-openrouter-usage",
+  "icon": "images/icon.png",
+  "cover": {
+    "path": "images/cover.png",
+    "alt": "OpenRouter Usage: one input fanning out to several models, with the title and the features Credits and burn rate, Models, API keys and Daily ledger"
+  },
+  "screenshots": [
+    {
+      "path": "images/screenshot-overview.png",
+      "alt": "The Overview tab: a banner with credits left, days left and today's spend, stat tiles and a stacked daily spend chart by model",
+      "caption": "Credits, runway and daily spend at a glance",
+      "theme": "dark"
+    },
+    {
+      "path": "images/screenshot-models.png",
+      "alt": "A model details drawer showing total, share, requests, token breakdown, cache hit rate and a daily sparkline",
+      "caption": "A details drawer for every model",
+      "theme": "dark"
+    },
+    {
+      "path": "images/screenshot-keys.png",
+      "alt": "The Keys tab with a 7d, 30d and All range switch and one compact card per API key with spend, limit meter and last use",
+      "caption": "Spend per API key for the range you pick",
+      "theme": "dark"
+    },
+    {
+      "path": "images/screenshot-ledger.png",
+      "alt": "The Ledger tab: a newest-first list of days with a bar and amount, and an activity calendar",
+      "caption": "A daily ledger and activity calendar",
+      "theme": "dark"
+    },
+    {
+      "path": "images/screenshot-settings.png",
+      "alt": "The Settings tab with connection test, key replacement, refresh interval, alert thresholds and toggles",
+      "caption": "Verify your key and tune alerts",
+      "theme": "dark"
+    }
+  ],
+  "engines": {
+    "orca": ">=1.4.248"
+  },
+  "execution": "trusted-worker",
+  "pluginApi": 1,
+  "main": "src/worker.ts",
+  "contributes": {
+    "panels": [
+      {
+        "id": "usage",
+        "title": "OpenRouter Usage",
+        "icon": "gauge",
+        "entry": "panel/index.html",
+        "ui": "html"
+      }
+    ],
+    "settings": [
+      {
+        "key": "refreshMinutes",
+        "title": "Refresh interval (minutes)",
+        "description": "How often the worker polls OpenRouter in the background.",
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 120
+      },
+      {
+        "key": "lowBalanceUsd",
+        "title": "Low balance alert (USD)",
+        "description": "Notify and warn in the status bar when credits left drop below this. 0 turns it off.",
+        "type": "number",
+        "default": 5,
+        "minimum": 0
+      },
+      {
+        "key": "dailyBudgetUsd",
+        "title": "Daily budget (USD)",
+        "description": "Notify once per day when today's spend passes this. 0 turns it off.",
+        "type": "number",
+        "default": 0,
+        "minimum": 0
+      },
+      {
+        "key": "notifications",
+        "title": "Desktop notifications",
+        "description": "Notify when credits run low or the daily budget is passed.",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "statusBar",
+        "title": "Show credits in the status bar",
+        "type": "boolean",
+        "default": true
+      },
+      {
+        "key": "statusBarContent",
+        "title": "Status bar shows",
+        "description": "What the status bar item says next to your credits left.",
+        "type": "string",
+        "default": "credits-today",
+        "enum": [
+          "credits",
+          "credits-today",
+          "credits-days"
+        ],
+        "enumLabels": [
+          "Credits left",
+          "Credits left and today's spend",
+          "Credits left and days left"
+        ]
+      },
+      {
+        "key": "includeByok",
+        "title": "Count BYOK usage in spend",
+        "description": "Include requests made with your own provider keys in the spend figures.",
+        "type": "boolean",
+        "default": true
+      }
+    ],
+    "statusBarItems": [
+      {
+        "id": "balance",
+        "text": "OpenRouter",
+        "icon": "gauge",
+        "tooltip": "OpenRouter credits left"
+      }
+    ]
+  },
+  "capabilities": [
+    {
+      "kind": "storage:own"
+    },
+    {
+      "kind": "secrets:own"
+    },
+    {
+      "kind": "settings:own"
+    },
+    {
+      "kind": "notifications:show"
+    }
+  ]
+}

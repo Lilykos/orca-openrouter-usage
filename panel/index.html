@@ -637,7 +637,7 @@ function tilesHtml(rep) {
     tile('Requests', groupInt(Math.round(t.requests)), rl),
     tile('Avg cost / request', t.avgCostPerRequest == null ? '—' : money(t.avgCostPerRequest), 'spend / requests'),
     tile('Cache hit rate', pct(t.cacheHitRate), 'of prompt tokens', 'Share of prompt tokens served from the provider cache.'),
-    tile('Reasoning tokens', compact(t.reasoning), rl)
+    tile('This month', money(t.monthToDate), t.monthProjected == null ? 'so far, UTC month' : '≈ ' + money(t.monthProjected) + ' by month end', 'Spend so far this UTC month, including today, and where it lands at your recent daily rate.')
   ].join('')}</div>`;
 }
 
@@ -1610,6 +1610,7 @@ function makeMock() {
     { name: 'deepseek/deepseek-chat', provider: 'Together', w: 0.1, ppm: 0.4, reason: 0 },
     { name: 'meta-llama/llama-3.3-70b-instruct', provider: 'Together', w: 0.08, ppm: 0.3, reason: 0 }
   ];
+  if (has('many')) for (let i = 1; i <= 7; i++) MODELS.push({ name: 'vendor/extra-model-' + i, provider: 'Other', w: 0.02, ppm: 0.2 + i * 0.05, reason: 0 });
   const rows = [];
   for (let i = 0; i <= HISTORY; i++) {
     const date = addDays(today, -i);
@@ -1734,6 +1735,11 @@ function makeMock() {
       remaining: round2(remaining + 0.6 - (i * 0.6) / steps + (i % 2 ? 0.02 : 0))
     }));
 
+    const monthStart = today.slice(0, 8) + '01';
+    const monthDone = rows.filter((r) => r.date >= monthStart && r.date < today).reduce((a, r) => a + r.usage + (settings.includeByok ? r.byokUsage : 0), 0);
+    const monthToDate = round4(monthDone + todayCost);
+    const dim = new Date(Date.UTC(+today.slice(0, 4), +today.slice(5, 7), 0)).getUTCDate();
+    const monthProjected = burnPerDay == null ? null : round4(monthToDate + burnPerDay * (dim - +today.slice(8, 10)));
     return {
       generatedAt: Date.now(),
       range, measure,
@@ -1741,7 +1747,8 @@ function makeMock() {
       tiles: {
         spend: round4(spend), today: round4(todayCost), tokensIn: tokIn, tokensOut: tokOut, reasoning, requests,
         avgCostPerRequest: requests ? round4(spend / requests) : null,
-        cacheHitRate: tokIn ? cached / tokIn : null
+        cacheHitRate: tokIn ? cached / tokIn : null,
+        monthToDate, monthProjected
       },
       daily,
       models: ranked(),

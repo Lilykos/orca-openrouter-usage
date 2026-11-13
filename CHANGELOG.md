@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.0
+
+First stable release.
+
+- New **This month** tile on the Overview: spend so far this UTC month (including today) and where it lands at your recent daily rate. It follows your BYOK setting and ignores the range switch.
+- Replaces the Reasoning tokens tile, which is still in the token mix and in each model's details drawer.
+- More automated checks: the Models list's "Show more / Show less" toggle and the new tile are covered by the panel checks.
+
 ## 0.1.0
 
 First release.

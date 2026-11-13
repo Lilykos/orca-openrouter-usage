@@ -58,6 +58,10 @@ export interface Tiles {
   avgCostPerRequest: number | null
   /** cached / prompt in 0..1, or null when there are no prompt tokens. */
   cacheHitRate: number | null
+  /** Spend so far this UTC month: completed days from the stored history plus today's key totals. Ignores the range. */
+  monthToDate: number
+  /** monthToDate plus the recent daily burn for the rest of the month; null when there is no history to project from. */
+  monthProjected: number | null
 }
 
 export interface DailyBar {

@@ -2,7 +2,7 @@
   "manifestVersion": 2,
   "id": "openrouter-usage",
   "name": "OpenRouter Usage",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Keep an eye on your OpenRouter account from the sidebar: credits left and days of runway, spend and tokens by model and key, a daily ledger, low-balance alerts and a status bar item. Read-only, and your management key stays in the OS keyring.",
   "author": {
     "name": "Lilykos",

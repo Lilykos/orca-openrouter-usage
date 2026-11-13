@@ -75,11 +75,12 @@ if (!chrome) {
 // ---- 2. every view renders what it should, with no junk values ----
 section('Views')
 const views = [
-  ['overview', 'dark,tab=overview', ['Daily spend', 'Credits left']],
+  ['overview', 'dark,tab=overview', ['Daily spend', 'Credits left', 'This month', 'by month end']],
   ['overview, tokens measure', 'dark,tab=overview', ['Daily tokens'], { measure: 'tokens' }],
   ['models, 7d', 'dark,tab=models', ['across'], { range: '7d' }],
   ['models', 'dark,tab=models', ['across', 'models']],
   ['models drawer', 'dark,tab=models,drawer', ['Requests', 'Cost per 1M tokens']],
+  ['models, many (toggle shown)', 'dark,tab=models,many', ['Show 5 more']],
   ['keys', 'dark,tab=keys', ['API keys', 'in 30d']],
   ['ledger', 'light,tab=ledger', ['Daily ledger']],
   ['settings', 'dark,tab=settings', ['Connection', 'Status bar shows', 'follow UTC']],
@@ -213,6 +214,15 @@ try {
     const toggle = $('[data-set="statusBar"]');
     if (toggle && sel) { toggle.click(); await wait(400); check('the status bar picker is disabled while the status bar is off', !!document.querySelector('select[disabled]')); }
     else check('status bar picker and toggle exist', false);
+  `))
+  report(drive('dark,tab=models,many', `
+    const rows = () => document.querySelectorAll('[data-act="model-open"]').length;
+    check('only the top 8 models show at first', rows() === 8);
+    await click('[data-act="models-more"]');
+    check('"Show more" reveals the rest (13 in all)', rows() === 13);
+    check('the toggle now offers "Show less"', /Show less/.test(txt()));
+    await click('[data-act="models-more"]');
+    check('"Show less" collapses back to 8', rows() === 8);
   `))
   report(drive('dark,setup', `
     const input = $('#mgmt');

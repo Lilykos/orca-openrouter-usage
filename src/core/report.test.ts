@@ -275,3 +275,44 @@ test('models are ranked by the active measure, not always by cost', () => {
   assert.deepEqual(names('cost'), ['pricey', 'cheap-but-huge'])
   assert.deepEqual(names('tokens'), ['cheap-but-huge', 'pricey'])
 })
+
+test('this month: completed days of the month plus today, projected at the recent daily rate', () => {
+  const data = [
+    row({ date: '2026-10-31', usage: 100 }), // last month: never counted
+    row({ date: '2026-11-01', usage: 1 }),
+    row({ date: '2026-11-09', usage: 2 }), // inside the 7-day burn window: burn = 2 / 7
+  ]
+  const { tiles } = buildReport(baseInput({ rows: data, keys: [kinfo({ usageDaily: 0.5 })], range: '7d' }))
+  assert.ok(Math.abs(tiles.monthToDate - 3.5) < 1e-9) // 1 + 2 + today's 0.5
+  // 10 Nov of a 30-day month: 20 days left at 2/7 a day
+  assert.ok(Math.abs(tiles.monthProjected! - (3.5 + (2 / 7) * 20)) < 1e-9)
+})
+
+test('this month ignores the selected range', () => {
+  const data = [row({ date: '2026-11-01', usage: 4 })]
+  const a = buildReport(baseInput({ rows: data, keys: [kinfo({ usageDaily: 0 })], range: '7d' })).tiles.monthToDate
+  const b = buildReport(baseInput({ rows: data, keys: [kinfo({ usageDaily: 0 })], range: 'all' })).tiles.monthToDate
+  assert.equal(a, 4)
+  assert.equal(b, 4)
+})
+
+test('this month on the first day of a month starts from today only, in a 31-day month', () => {
+  const now = Date.parse('2026-12-01T12:00:00Z')
+  const data = [row({ date: '2026-11-30', usage: 7 })] // yesterday, but last month
+  const { tiles } = buildReport(baseInput({ rows: data, keys: [kinfo({ usageDaily: 0.25 })], now }))
+  assert.equal(tiles.monthToDate, 0.25)
+  assert.ok(Math.abs(tiles.monthProjected! - (0.25 + (7 / 7) * 30)) < 1e-9) // 30 days left in December
+})
+
+test('this month: no history means no projection', () => {
+  const { tiles } = buildReport(baseInput({ rows: [], keys: [kinfo({ usageDaily: 0.4 })] }))
+  assert.equal(tiles.monthToDate, 0.4)
+  assert.equal(tiles.monthProjected, null)
+})
+
+test('this month honours the BYOK setting', () => {
+  const data = [row({ date: '2026-11-02', usage: 1, byokUsage: 4 })]
+  const mtd = (includeByok: boolean) => buildReport(baseInput({ rows: data, keys: [kinfo({ usageDaily: 0 })], includeByok })).tiles.monthToDate
+  assert.equal(mtd(false), 1)
+  assert.equal(mtd(true), 5)
+})

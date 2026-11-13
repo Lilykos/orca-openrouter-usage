@@ -154,7 +154,7 @@ export function buildReport(input: ReportInput): Report {
     reasoning += r.reasoning
     cached += r.cached
   }
-  const tiles: Tiles = {
+  const tiles: Omit<Tiles, 'monthToDate' | 'monthProjected'> = {
     spend,
     today: keys.reduce((s, k) => s + k.usageDaily, 0),
     tokensIn: prompt,
@@ -261,12 +261,20 @@ export function buildReport(input: ReportInput): Report {
     .map((e) => ({ ...e, series: days.map((d) => perModelDay.get(e.name)?.get(d) ?? 0) }))
     .sort((a, b) => measured(b) - measured(a) || byName(a.name, b.name))
 
+  // This month so far (UTC calendar month) and where it lands at the recent daily rate.
+  const monthStart = today.slice(0, 8) + '01'
+  let monthToDate = tiles.today
+  for (const r of history) if (r.date >= monthStart) monthToDate += rowCost(r, inc)
+  const dayOfMonth = Number(today.slice(8, 10))
+  const daysInMonth = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0)).getUTCDate()
+  const monthProjected = burnPerDay === null ? null : monthToDate + burnPerDay * (daysInMonth - dayOfMonth)
+
   return {
     generatedAt: now,
     range,
     measure,
     balance,
-    tiles,
+    tiles: { ...tiles, monthToDate, monthProjected },
     daily,
     models,
     keys: keys.map((k): ReportKey => {

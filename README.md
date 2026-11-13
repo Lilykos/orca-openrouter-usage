@@ -9,6 +9,7 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
 ## What it shows
 
 - A banner with your **credits left**, the projected days left at your recent burn rate, and today's spend (approximate).
+- A **This month** tile with spend so far and where it lands by month end at your recent rate.
 - Five tabs: **Overview** (tiles, daily spend or tokens by model, today's burn), **Models** (ranked, with a details drawer per model plus the token mix), **Keys** (spend per key for 7d, 30d or all time, with limits and last use) **Ledger** (newest-first daily list and an activity heatmap) and **Settings**.
 - Range (7d, 30d, All) and Cost or Tokens switches, with refresh on the right.
 - A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a daily budget is passed.

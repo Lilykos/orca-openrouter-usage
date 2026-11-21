@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+- Compare spend over 7 or 30 completed UTC days with the preceding equal period, including per-model changes. Comparisons wait for sufficient history and handle new spend without infinite percentages.
+- Export daily totals, models or API keys as CSV for the selected range and BYOK setting. Files include UTC bounds, label approximate today, leave unknown amounts blank and protect against spreadsheet formula injection.
+- Optional monthly budget: Overview progress and an alert when actual or projected spend exceeds the limit. Alerts respect notification settings, recover after spending falls below the limit and reset each UTC month. Usage is never blocked.
+- API key health: expiring/expired badges, near/exhausted-limit warnings and reset periods. Limit meters use the API's remaining allowance rather than lifetime usage.
+- BYOK totals now follow the setting for Today, monthly figures, lifetime key spend, the status bar and daily-budget alerts. BYOK-only activity is fetched too; external BYOK costs do not shorten OpenRouter credit runway.
+- Follow Orca's interface font, with fallbacks for older versions. Retains support for Orca 1.4.248 and the same permissions.
+- Make worker fixtures independent of the calendar; add regression checks for the new features, CSV save/cancel/error flows and font preferences.
+
 ## 1.0.0
 
 First stable release.

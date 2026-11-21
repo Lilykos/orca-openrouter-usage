@@ -5,6 +5,7 @@ import type { DayRow, KeyInfo, Measure, Range, Report, Settings, Status, StatusB
 import { OpenRouterError, createClient, getActivity, getCredits, getKeyActivity, getKeyMeta, listKeys } from './core/openrouter'
 import { buildReport, keyMayHaveRecentActivity, normalizeActivity, normalizeKeys, todaySpend } from './core/report'
 import { addSnapshot, mergeDays, pruneRows, type Snapshot } from './core/history'
+import { reportCsv } from './core/csv'
 
 const MGMT_KEY = 'mgmtKey'
 const KEY_LABEL = 'keyLabel'
@@ -23,18 +24,20 @@ interface Meta {
 interface Alerts {
   lowFired: boolean
   budgetFiredDate: string | null
+  monthlyFiredMonth?: string | null
 }
 
 type RefreshResult = { ok: true } | { ok: false; error: string }
 
 const EMPTY_CACHE: Cache = { credits: null, keys: [] }
 const EMPTY_META: Meta = { lastRefreshAt: null, lastError: null, errorSince: null }
-const EMPTY_ALERTS: Alerts = { lowFired: false, budgetFiredDate: null }
+const EMPTY_ALERTS: Alerts = { lowFired: false, budgetFiredDate: null, monthlyFiredMonth: null }
 
 const DEFAULT_SETTINGS: Settings = {
   refreshMinutes: 5,
   lowBalanceUsd: 5,
   dailyBudgetUsd: 0,
+  monthlyBudgetUsd: 0,
   notifications: true,
   statusBar: true,
   statusBarContent: 'credits-today',
@@ -105,6 +108,7 @@ export default function activate(orca: OrcaWorkerApi): void {
       refreshMinutes: Math.round(clampNumber(raw.refreshMinutes, 1, 120, DEFAULT_SETTINGS.refreshMinutes)),
       lowBalanceUsd: clampNumber(raw.lowBalanceUsd, 0, 1_000_000, DEFAULT_SETTINGS.lowBalanceUsd),
       dailyBudgetUsd: clampNumber(raw.dailyBudgetUsd, 0, 1_000_000, DEFAULT_SETTINGS.dailyBudgetUsd),
+      monthlyBudgetUsd: clampNumber(raw.monthlyBudgetUsd, 0, 1_000_000, DEFAULT_SETTINGS.monthlyBudgetUsd),
       notifications: bool('notifications'),
       statusBar: bool('statusBar'),
       statusBarContent: CONTENT_CHOICES.includes(raw.statusBarContent as StatusBarContent)
@@ -204,7 +208,19 @@ export default function activate(orca: OrcaWorkerApi): void {
         body: `${usd(today)} spent today (budget ${usd(budget)}).`,
       })
     }
-    if (next.lowFired !== alerts.lowFired || next.budgetFiredDate !== alerts.budgetFiredDate) {
+    const monthly = settings.monthlyBudgetUsd > 0 ? await currentReport('all', 'cost') : null
+    const overMonthly = monthly && Math.max(monthly.tiles.monthToDate, monthly.tiles.monthProjected ?? 0) > settings.monthlyBudgetUsd
+    if (overMonthly) {
+      const month = day.slice(0, 7)
+      if (alerts.monthlyFiredMonth !== month) {
+        next.monthlyFiredMonth = month
+        if (settings.notifications) await notify({
+          title: 'OpenRouter monthly budget warning',
+          body: `${usd(monthly.tiles.monthToDate)} spent this UTC month${monthly.tiles.monthProjected === null ? '' : `; projected ${usd(monthly.tiles.monthProjected)}`} (budget ${usd(settings.monthlyBudgetUsd)}).`,
+        })
+      }
+    } else next.monthlyFiredMonth = null
+    if (next.lowFired !== alerts.lowFired || next.budgetFiredDate !== alerts.budgetFiredDate || next.monthlyFiredMonth !== alerts.monthlyFiredMonth) {
       await orca.storage.set('alerts', next as never)
     }
   }
@@ -241,10 +257,11 @@ export default function activate(orca: OrcaWorkerApi): void {
     return { rows, fetched }
   }
 
-  async function currentReport(range: Range, measure: Measure): Promise<Report | null> {
+  async function currentReport(range: Range, measure: Measure, settings?: Settings): Promise<Report | null> {
     const cache = await load<Cache>('cache', EMPTY_CACHE)
     if (!cache.credits) return null
     const meta = await load<Meta>('meta', EMPTY_META)
+    settings ??= await readSettings()
     return buildReport({
       rows: await load<DayRow[]>('rows', []),
       keys: cache.keys,
@@ -254,7 +271,8 @@ export default function activate(orca: OrcaWorkerApi): void {
       now: Date.now(),
       range,
       measure,
-      includeByok: (await readSettings()).includeByok,
+      includeByok: settings.includeByok,
+      monthlyBudgetUsd: settings.monthlyBudgetUsd,
       stale: meta.lastError ? { since: meta.errorSince ?? Date.now(), error: meta.lastError } : null,
     })
   }
@@ -434,6 +452,7 @@ export default function activate(orca: OrcaWorkerApi): void {
     if (patch.refreshMinutes !== undefined) next.refreshMinutes = Math.round(clampNumber(patch.refreshMinutes, 1, 120, next.refreshMinutes))
     if (patch.lowBalanceUsd !== undefined) next.lowBalanceUsd = clampNumber(patch.lowBalanceUsd, 0, 1_000_000, next.lowBalanceUsd)
     if (patch.dailyBudgetUsd !== undefined) next.dailyBudgetUsd = clampNumber(patch.dailyBudgetUsd, 0, 1_000_000, next.dailyBudgetUsd)
+    if (patch.monthlyBudgetUsd !== undefined) next.monthlyBudgetUsd = clampNumber(patch.monthlyBudgetUsd, 0, 1_000_000, next.monthlyBudgetUsd)
     if (typeof patch.notifications === 'boolean') next.notifications = patch.notifications
     if (typeof patch.statusBar === 'boolean') next.statusBar = patch.statusBar
     if (patch.statusBarContent !== undefined && CONTENT_CHOICES.includes(patch.statusBarContent)) next.statusBarContent = patch.statusBarContent
@@ -441,7 +460,13 @@ export default function activate(orca: OrcaWorkerApi): void {
     const changed = (Object.keys(next) as (keyof Settings)[]).filter((k) => next[k] !== current[k])
     for (const k of changed) await orca.settings.set(k, next[k])
     // Alerts re-arm only when a threshold they depend on changed.
-    if (changed.includes('lowBalanceUsd') || changed.includes('dailyBudgetUsd')) await orca.storage.set('alerts', EMPTY_ALERTS as never)
+    if (changed.some((k) => ['lowBalanceUsd', 'dailyBudgetUsd', 'monthlyBudgetUsd'].includes(k))) {
+      const alerts = await load<Alerts>('alerts', EMPTY_ALERTS)
+      if (changed.includes('lowBalanceUsd')) alerts.lowFired = false
+      if (changed.includes('dailyBudgetUsd')) alerts.budgetFiredDate = null
+      if (changed.includes('monthlyBudgetUsd')) alerts.monthlyFiredMonth = null
+      await orca.storage.set('alerts', alerts as never)
+    }
     if (changed.length > 0) {
       await updateStatusBar()
       if (changed.includes('refreshMinutes')) await reschedule()
@@ -459,6 +484,16 @@ export default function activate(orca: OrcaWorkerApi): void {
   })
 
   orca.panels.handle('report.get', ({ range, measure }) => currentReport(range, measure))
+
+  orca.panels.handle('export.csv', async ({ range, kind }) => {
+    if (!['7d', '30d', 'all'].includes(range) || !['daily', 'models', 'keys'].includes(kind)) {
+      throw Object.assign(new Error('Invalid export range or kind.'), { code: 'invalid_params' })
+    }
+    const settings = await readSettings()
+    const report = await currentReport(range, 'cost', settings)
+    if (!report) throw new Error('No usage data to export. Connect and refresh first.')
+    return reportCsv(report, kind, settings.includeByok)
+  })
 
   orca.panels.handle('refresh', () => refresh())
 

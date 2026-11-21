@@ -14,20 +14,20 @@ const QUERY = { range: '30d', measure: 'cost' } as const
 // Fixture keys with the first two stamped as used just now (the real fixture dates age out).
 function recentKeys(bump = 0, byokDaily = 0): unknown {
   const body = fixture('keys') as { data: { usage: number; last_used_at: string | null }[] }
-  const data = body.data.map((k, i) => (i < 2 ? { ...k, usage: Math.max(k.usage, 1) + bump, byok_usage_daily: i === 0 ? byokDaily : 0, last_used_at: new Date().toISOString() } : { ...k, last_used_at: null }))
+  const data = body.data.map((k, i) => (i < 2 ? { ...k, usage: Math.max(k.usage, 1) + bump, byok_usage_daily: i === 0 ? byokDaily : 0, last_used_at: new Date(Date.now()).toISOString() } : { ...k, last_used_at: null }))
   return { data }
 }
 
 // Keep the fixture's newest completed day at yesterday, independent of the test run date.
-function recentActivity(): unknown {
-  const body = fixture('activity') as { data: { date: string }[] }
+function recentActivity(scale = 1): unknown {
+  const body = fixture('activity') as { data: { date: string; usage: number; byok_usage_inference: number }[] }
   const latest = Math.max(...body.data.map((r) => Date.parse(r.date.slice(0, 10) + 'T00:00:00Z')))
   const yesterday = Date.parse(new Date(Date.now() - 86_400_000).toISOString().slice(0, 10) + 'T00:00:00Z')
-  return { data: body.data.map((r) => ({ ...r, date: new Date(Date.parse(r.date.slice(0, 10) + 'T00:00:00Z') + yesterday - latest).toISOString().slice(0, 10) })) }
+  return { data: body.data.map((r) => ({ ...r, usage: r.usage * scale, byok_usage_inference: r.byok_usage_inference * scale, date: new Date(Date.parse(r.date.slice(0, 10) + 'T00:00:00Z') + yesterday - latest).toISOString().slice(0, 10) })) }
 }
 
 // Routes by path; `managementKey: false` makes /key report a regular key, `fail` makes every call 401.
-function fakeFetch(opts: { managementKey?: boolean; fail?: boolean; failKeyActivity?: boolean; keyCalls?: string[]; usageBump?: number; byokDaily?: number; emptyActivity?: boolean; gate?: Promise<void>; networkDown?: boolean } = {}): typeof fetch {
+function fakeFetch(opts: { managementKey?: boolean; fail?: boolean; failKeyActivity?: boolean; keyCalls?: string[]; usageBump?: number; byokDaily?: number; activityScale?: number; emptyActivity?: boolean; gate?: Promise<void>; networkDown?: boolean } = {}): typeof fetch {
   return (async (input: RequestInfo | URL) => {
     const url = new URL(String(input))
     const path = url.pathname.replace('/api/v1', '')
@@ -49,7 +49,7 @@ function fakeFetch(opts: { managementKey?: boolean; fail?: boolean; failKeyActiv
             : path === '/activity'
               ? opts.emptyActivity
                 ? { data: [] }
-                : recentActivity()
+                : recentActivity(opts.activityScale)
               : null
     return new Response(JSON.stringify(body), { status: body ? 200 : 404 })
   }) as typeof fetch
@@ -258,6 +258,85 @@ test('BYOK daily totals reach the report, status bar and daily budget alert', as
   await worker.request('settings.set', { includeByok: false })
   const off = (await worker.request('report.get', QUERY)) as Report
   assert.ok(Math.abs(on.tiles.today - off.tiles.today - 3) < 1e-9)
+})
+
+test('CSV export follows the requested range and BYOK setting and contains no management key', async () => {
+  const { worker } = await connected()
+  const on = await worker.request('export.csv', { range: '7d', kind: 'daily' }) as { data: string; suggestedName: string }
+  assert.ok(on.suggestedName.includes('daily-7d'))
+  assert.ok(on.data.includes('"7d"'))
+  assert.ok(!JSON.stringify(on).includes(MGMT))
+  await worker.request('settings.set', { includeByok: false })
+  const off = await worker.request('export.csv', { range: '7d', kind: 'daily' }) as { data: string }
+  assert.notEqual(on.data, off.data)
+  await assert.rejects(() => worker.request('export.csv', { range: 'bad', kind: 'daily' } as never), /Invalid export/)
+  await assert.rejects(() => worker.request('export.csv', { range: '7d', kind: 'bad' } as never), /Invalid export/)
+})
+
+test('CSV export requires a report', async () => {
+  const worker = await mountWorker(main, { host: mockHost() })
+  await assert.rejects(() => worker.request('export.csv', { range: '7d', kind: 'daily' }), /No usage data/)
+})
+
+test('monthly budget is optional, validated and included in reports', async () => {
+  const { worker } = await connected()
+  assert.equal(((await worker.request('report.get', QUERY)) as Report).monthlyBudgetUsd, 0)
+  await worker.request('settings.set', { monthlyBudgetUsd: 42.5 })
+  assert.equal(((await worker.request('report.get', QUERY)) as Report).monthlyBudgetUsd, 42.5)
+  await worker.request('settings.set', { monthlyBudgetUsd: -1 })
+  assert.equal(((await worker.request('settings.get')) as Settings).monthlyBudgetUsd, 0)
+})
+
+test('monthly budget alerts on projection, deduplicates, recovers and respects notifications off', async () => {
+  const original = Date.now
+  Date.now = () => Date.parse('2026-11-10T12:00:00Z')
+  try {
+    const { host, worker } = await connected({ lowBalanceUsd: 0 })
+    const refresh = () => withFetch(fakeFetch(), () => worker.request('refresh'))
+    const alerts = () => host.callsOf('notifications.show').filter((c) => (c as { title: string }).title.includes('monthly budget'))
+    const r = await worker.request('report.get', QUERY) as Report
+    const limit = (r.tiles.monthToDate + r.tiles.monthProjected!) / 2
+    assert.ok(r.tiles.monthToDate < limit && r.tiles.monthProjected! > limit)
+    await worker.request('settings.set', { monthlyBudgetUsd: limit || 0.001 })
+    await refresh()
+    assert.equal(alerts().length, 1)
+    await refresh()
+    assert.equal(alerts().length, 1)
+    await worker.request('settings.set', { monthlyBudgetUsd: 1_000_000 })
+    await refresh()
+    await worker.request('settings.set', { monthlyBudgetUsd: 0.001 })
+    await refresh()
+    assert.equal(alerts().length, 2)
+    const quiet = await connected({ monthlyBudgetUsd: 0.001, notifications: false })
+    assert.equal(quiet.host.callsOf('notifications.show').length, 0)
+  } finally { Date.now = original }
+})
+
+test('monthly budget alert fires again in a new UTC month', async () => {
+  const original = Date.now
+  let now = Date.parse('2026-11-30T12:00:00Z')
+  Date.now = () => now
+  try {
+    const { host, worker } = await connected({ monthlyBudgetUsd: 0.001, lowBalanceUsd: 0 })
+    const alerts = () => host.callsOf('notifications.show').filter((c) => (c as { title: string }).title.includes('monthly budget'))
+    assert.equal(alerts().length, 1)
+    now = Date.parse('2026-12-01T00:01:00Z')
+    await withFetch(fakeFetch(), () => worker.request('refresh'))
+    assert.equal(alerts().length, 2)
+  } finally { Date.now = original }
+})
+
+test('monthly forecast alerts re-arm after recovery without re-sending the low-balance alert', async () => {
+  const { host, worker } = await connected({ lowBalanceUsd: 30 })
+  await worker.request('settings.set', { monthlyBudgetUsd: 10 })
+  const refresh = (activityScale: number) => withFetch(fakeFetch({ activityScale }), () => worker.request('refresh'))
+  const monthly = () => host.callsOf('notifications.show').filter((c) => (c as { title: string }).title.includes('monthly budget')).length
+  await refresh(100)
+  assert.equal(monthly(), 1)
+  await refresh(0)
+  await refresh(100)
+  assert.equal(monthly(), 2)
+  assert.equal(host.callsOf('notifications.show').filter((c) => (c as { title: string }).title.includes('credits low')).length, 1)
 })
 
 test('old stored history is pruned on refresh', async () => {

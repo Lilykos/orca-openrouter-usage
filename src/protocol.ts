@@ -3,6 +3,8 @@
 
 export type Range = '7d' | '30d' | 'all'
 export type Measure = 'cost' | 'tokens'
+export type ExportKind = 'daily' | 'models' | 'keys'
+export interface CsvExport { suggestedName: string; mimeType: string; data: string }
 
 /** One /activity row, normalised. `date` is the first 10 chars of the API's date string. */
 export interface DayRow {
@@ -34,6 +36,9 @@ export interface KeyInfo {
   byokUsageDaily?: number
   byokUsageWeekly?: number
   byokUsageMonthly?: number
+  limitReset?: 'daily' | 'weekly' | 'monthly' | null
+  includeByokInLimit?: boolean
+  expiresAt?: string | null
   lastUsedAt: string | null
 }
 
@@ -41,6 +46,11 @@ export interface KeyInfo {
 export interface ReportKey extends KeyInfo {
   /** Spend in the range (USD): rolling completed days for 7d/30d, lifetime for 'all'; null while not yet fetched. */
   spend: number | null
+  health: {
+    expiry: 'expired' | 'expiring' | null
+    limit: 'exhausted' | 'near' | null
+    usedFraction: number | null
+  }
 }
 
 export interface Balance {
@@ -82,6 +92,8 @@ export interface DailyBar {
 export interface Ranked {
   name: string
   cost: number
+  /** Cost in the preceding equal period; null without enough comparison history. */
+  previousCost: number | null
   requests: number
   prompt: number
   completion: number
@@ -99,6 +111,8 @@ export interface Report {
   measure: Measure
   balance: Balance
   tiles: Tiles
+  monthlyBudgetUsd: number
+  comparison: { days: number; current: number; previous: number; changePercent: number | null } | null
   daily: DailyBar[]
   models: Ranked[]
   keys: ReportKey[]
@@ -133,7 +147,9 @@ export interface Settings {
   lowBalanceUsd: number
   /** Notify once per UTC day when today's spend passes this (USD). 0 = off. */
   dailyBudgetUsd: number
-  /** Show desktop notifications for the two alerts above. */
+  /** Warn when actual or projected UTC-month spend exceeds this; 0 = off. */
+  monthlyBudgetUsd: number
+  /** Show desktop notifications for balance and budget alerts. */
   notifications: boolean
   /** Show the credits-left item in Orca's status bar. */
   statusBar: boolean
@@ -158,6 +174,7 @@ declare module 'orca' {
     /** Validates and stores the given fields (clamping numbers), answers the full settings. */
     'settings.set': { input: Partial<Settings>; output: Settings }
     'report.get': { input: { range: Range; measure: Measure }; output: Report | null }
+    'export.csv': { input: { range: Range; kind: ExportKind }; output: CsvExport }
     'refresh': { output: { ok: true } | { ok: false; error: string } }
   }
   interface PluginPanelEvents {

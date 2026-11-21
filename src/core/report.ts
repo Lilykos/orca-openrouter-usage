@@ -25,6 +25,7 @@ export interface ReportInput {
   range: Range
   measure: Measure
   includeByok: boolean
+  monthlyBudgetUsd?: number
   stale: Report['stale']
 }
 
@@ -80,6 +81,9 @@ export function normalizeKeys(apiKeys: any[]): KeyInfo[] {
     byokUsageDaily: num(k?.byok_usage_daily),
     byokUsageWeekly: num(k?.byok_usage_weekly),
     byokUsageMonthly: num(k?.byok_usage_monthly),
+    limitReset: ['daily', 'weekly', 'monthly'].includes(k?.limit_reset) ? k.limit_reset : null,
+    includeByokInLimit: k?.include_byok_in_limit === true,
+    expiresAt: typeof k?.expires_at === 'string' && Number.isFinite(Date.parse(k.expires_at)) ? k.expires_at : null,
     lastUsedAt: typeof k?.last_used_at === 'string' ? k.last_used_at : null,
   }))
 }
@@ -91,6 +95,17 @@ export function rowCost(row: DayRow, includeByok: boolean): number {
 
 export function todaySpend(keys: KeyInfo[], includeByok: boolean): number {
   return keys.reduce((sum, k) => sum + k.usageDaily + (includeByok ? k.byokUsageDaily ?? 0 : 0), 0)
+}
+
+function keyHealth(k: KeyInfo, now: number): ReportKey['health'] {
+  const expires = k.expiresAt ? Date.parse(k.expiresAt) : NaN
+  const expiry = expires <= now ? 'expired' : expires <= now + 7 * DAY_MS ? 'expiring' : null
+  if (k.limit === null) return { expiry, limit: null, usedFraction: null }
+  const usage = k.limitReset === 'daily' ? k.usageDaily : k.limitReset === 'weekly' ? k.usageWeekly : k.limitReset === 'monthly' ? k.usageMonthly : k.usage
+  const byok = k.limitReset === 'daily' ? k.byokUsageDaily : k.limitReset === 'weekly' ? k.byokUsageWeekly : k.limitReset === 'monthly' ? k.byokUsageMonthly : k.byokUsage
+  const remaining = k.limitRemaining ?? k.limit - usage - (k.includeByokInLimit ? byok ?? 0 : 0)
+  const usedFraction = k.limit > 0 ? Math.min(1, Math.max(0, 1 - remaining / k.limit)) : 1
+  return { expiry, limit: k.limit === 0 || remaining <= 0 ? 'exhausted' : usedFraction >= 0.9 ? 'near' : null, usedFraction }
 }
 
 /** The active measure for one row: cost in USD, or prompt + completion tokens. */
@@ -117,7 +132,7 @@ function rank(rows: DayRow[], keyOf: (r: DayRow) => string, includeByok: boolean
     const name = keyOf(r)
     let e = groups.get(name)
     if (!e) {
-      e = { name, cost: 0, requests: 0, prompt: 0, completion: 0, reasoning: 0, cached: 0, costPerMTok: null, series: [] }
+      e = { name, cost: 0, previousCost: null, requests: 0, prompt: 0, completion: 0, reasoning: 0, cached: 0, costPerMTok: null, series: [] }
       groups.set(name, e)
     }
     e.cost += rowCost(r, includeByok)
@@ -242,6 +257,16 @@ export function buildReport(input: ReportInput): Report {
       ? 0
       : Math.max(0, Math.round((Date.parse(yesterday + 'T00:00:00Z') - Date.parse(firstStored + 'T00:00:00Z')) / DAY_MS) + 1)
 
+  const previousStart = n === null ? null : addDays(today, -2 * n)
+  const canCompare = previousStart !== null && firstStored !== null && firstStored <= previousStart
+  const previousRows = canCompare ? history.filter((r) => r.date >= previousStart! && r.date < startDay!) : []
+  const previous = previousRows.reduce((sum, r) => sum + rowCost(r, inc), 0)
+  const comparison = canCompare ? {
+    days: n!, current: spend, previous,
+    changePercent: previous > 0 ? (spend - previous) / previous * 100 : spend > 0 ? null : 0,
+  } : null
+  const previousModels = new Map(rank(previousRows, (r) => r.model, inc).map((m) => [m.name, m.cost]))
+
   // Balance: burn is the mean daily spend over the last 7 completed days, ignoring the range.
   const remaining = credits.totalCredits - credits.totalUsage
   let burnPerDay: number | null = null
@@ -272,7 +297,7 @@ export function buildReport(input: ReportInput): Report {
   }
   const measured = (e: Ranked): number => (measure === 'cost' ? e.cost : e.prompt + e.completion)
   const models = rank(scoped, (r) => r.model, inc)
-    .map((e) => ({ ...e, series: days.map((d) => perModelDay.get(e.name)?.get(d) ?? 0) }))
+    .map((e) => ({ ...e, previousCost: canCompare ? previousModels.get(e.name) ?? 0 : null, series: days.map((d) => perModelDay.get(e.name)?.get(d) ?? 0) }))
     .sort((a, b) => measured(b) - measured(a) || byName(a.name, b.name))
 
   // This month so far (UTC calendar month) and where it lands at the recent daily rate.
@@ -289,6 +314,8 @@ export function buildReport(input: ReportInput): Report {
     measure,
     balance,
     tiles: { ...tiles, monthToDate, monthProjected },
+    monthlyBudgetUsd: input.monthlyBudgetUsd ?? 0,
+    comparison,
     daily,
     models,
     keys: keys.map((k): ReportKey => {
@@ -296,7 +323,7 @@ export function buildReport(input: ReportInput): Report {
       if (range === 'all') spend = k.usage + (inc ? k.byokUsage ?? 0 : 0)
       else if (keyRows[k.hash]) spend = filterRows(keyRows[k.hash], range, now).reduce((s, r) => s + rowCost(r, inc), 0)
       else spend = keyMayHaveRecentActivity(k, now) ? null : 0
-      return { ...k, spend }
+      return { ...k, spend, health: keyHealth(k, now) }
     }),
     mix,
     heatmap,

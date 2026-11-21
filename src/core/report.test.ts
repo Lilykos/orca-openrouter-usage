@@ -341,3 +341,67 @@ test('a BYOK-only key can have recent activity', () => {
   const report = buildReport(baseInput({ rows: [], keys: data, range: '7d' }))
   assert.equal(report.keys[0].spend, null)
 })
+
+test('comparison uses equal completed UTC periods and includes per-model previous cost', () => {
+  const data = [
+    row({ date: '2026-10-27', usage: 8 }), // previous period starts exactly here
+    row({ date: '2026-11-02', usage: 2 }),
+    row({ date: '2026-11-03', usage: 3 }), // current period starts exactly here
+    row({ date: '2026-11-09', usage: 2 }),
+    row({ date: TODAY, usage: 100 }),
+  ]
+  const r = buildReport(baseInput({ rows: data, range: '7d' }))
+  assert.deepEqual(r.comparison, { days: 7, current: 5, previous: 10, changePercent: -50 })
+  assert.equal(r.models[0].previousCost, 10)
+})
+
+test('comparison needs two full periods and is unavailable for All', () => {
+  assert.equal(buildReport(baseInput({ rows: [row()], range: '7d' })).comparison, null)
+  assert.equal(buildReport(baseInput({ range: 'all' })).comparison, null)
+  assert.equal(buildReport(baseInput({ range: '30d' })).comparison, null)
+  const r = buildReport(baseInput({ range: '30d', rows: [row({ date: '2026-09-11', usage: 4 }), row({ date: '2026-10-11', usage: 8 })] }))
+  assert.deepEqual(r.comparison, { days: 30, current: 8, previous: 4, changePercent: 100 })
+})
+
+test('comparison handles zero baselines, new models and BYOK without infinity', () => {
+  const data = [row({ date: '2026-10-27', model: 'old', usage: 0 }), row({ usage: 2, byokUsage: 3 })]
+  const r = buildReport(baseInput({ rows: data, range: '7d', includeByok: true }))
+  assert.deepEqual(r.comparison, { days: 7, current: 5, previous: 0, changePercent: null })
+  assert.equal(r.models.find((m) => m.name === 'm/a')!.previousCost, 0)
+  const zero = buildReport(baseInput({ rows: [row({ date: '2026-10-27', usage: 0 })], range: '7d' }))
+  assert.equal(zero.comparison!.changePercent, 0)
+})
+
+test('key health uses API remaining limit rather than lifetime usage and keeps reset and expiry metadata', () => {
+  const data = normalizeKeys([{ hash: 'key', usage: 900, usage_daily: 9, limit: 10, limit_remaining: 1, limit_reset: 'daily', expires_at: '2026-11-12T12:00:00Z', include_byok_in_limit: true }])
+  const key = buildReport(baseInput({ keys: data })).keys[0]
+  assert.equal(key.limitReset, 'daily')
+  assert.equal(key.includeByokInLimit, true)
+  assert.equal(key.health.expiry, 'expiring')
+  assert.equal(key.health.limit, 'near')
+  assert.equal(key.health.usedFraction, 0.9)
+})
+
+test('key health handles expired keys, exhausted and zero limits, and invalid dates', () => {
+  const data = normalizeKeys([
+    { expires_at: '2026-11-10T12:00:00Z', limit: 10, limit_remaining: -1 },
+    { expires_at: 'bad date', limit: 0 },
+    { expires_at: '2026-11-18T12:00:00Z' },
+  ])
+  const out = buildReport(baseInput({ keys: data })).keys
+  assert.equal(out[0].health.expiry, 'expired')
+  assert.equal(out[0].health.limit, 'exhausted')
+  assert.equal(out[0].health.usedFraction, 1)
+  assert.equal(out[1].health.expiry, null)
+  assert.equal(out[1].health.limit, 'exhausted')
+  assert.equal(out[2].health.expiry, null)
+  assert.equal(out[2].health.usedFraction, null)
+})
+
+test('key health falls back to the reset-period usage and the key limit BYOK policy', () => {
+  const data = normalizeKeys([{ usage: 900, usage_monthly: 2, byok_usage_monthly: 7, limit: 10, limit_reset: 'monthly', include_byok_in_limit: true }])
+  const on = buildReport(baseInput({ keys: data, includeByok: true })).keys[0]
+  const off = buildReport(baseInput({ keys: data, includeByok: false })).keys[0]
+  assert.equal(on.health.usedFraction, 0.9)
+  assert.equal(off.health.usedFraction, 0.9) // spend toggle does not change the API key's limit policy
+})

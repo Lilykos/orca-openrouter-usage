@@ -2,8 +2,8 @@
   "manifestVersion": 2,
   "id": "openrouter-usage",
   "name": "OpenRouter Usage",
-  "version": "1.0.0",
-  "description": "Keep an eye on your OpenRouter account from the sidebar: credits left and days of runway, spend and tokens by model and key, a daily ledger, low-balance alerts and a status bar item. Read-only, and your management key stays in the OS keyring.",
+  "version": "1.1.0",
+  "description": "Track OpenRouter credits, runway and spend from Orca: model comparisons, daily and monthly budgets, API key health, CSV exports and a status bar balance. Read-only; your management key stays in Orca's encrypted secret store.",
   "author": {
     "name": "Lilykos",
     "url": "https://github.com/Lilykos"
@@ -19,8 +19,8 @@
   "screenshots": [
     {
       "path": "images/screenshot-overview.png",
-      "alt": "The Overview tab: a banner with credits left, days left and today's spend, stat tiles and a stacked daily spend chart by model",
-      "caption": "Credits, runway and daily spend at a glance",
+      "alt": "The Overview: credits and runway, monthly spend and projection, comparison with the preceding period, budget progress and a daily spend chart",
+      "caption": "Credits, spend comparisons and monthly budgets",
       "theme": "dark"
     },
     {
@@ -31,8 +31,8 @@
     },
     {
       "path": "images/screenshot-keys.png",
-      "alt": "The Keys tab with a 7d, 30d and All range switch and one compact card per API key with spend, limit meter and last use",
-      "caption": "Spend per API key for the range you pick",
+      "alt": "The Keys tab with per-key spend, expiring and expired key badges, near-limit warnings and UTC reset periods",
+      "caption": "Per-key spend, expiring keys and limit health",
       "theme": "dark"
     },
     {
@@ -86,6 +86,14 @@
         "key": "dailyBudgetUsd",
         "title": "Daily budget (USD)",
         "description": "Notify once per day when today's spend passes this. 0 turns it off.",
+        "type": "number",
+        "default": 0,
+        "minimum": 0
+      },
+      {
+        "key": "monthlyBudgetUsd",
+        "title": "Monthly budget (USD)",
+        "description": "Warn when actual or projected UTC-month spend exceeds this. 0 turns it off; usage is never blocked.",
         "type": "number",
         "default": 0,
         "minimum": 0

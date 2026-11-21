@@ -76,12 +76,16 @@ if (!chrome) {
 section('Views')
 const views = [
   ['overview', 'dark,tab=overview', ['Daily spend', 'Credits left', 'This month', 'by month end']],
+  ['overview comparison', 'dark,tab=overview', ['vs previous 7 days'], { range: '7d' }],
+  ['comparison needs history', 'dark,new,tab=overview', ['Collecting history'], { range: '7d' }],
+  ['monthly budget', 'dark,budget,tab=overview', ['Monthly budget', 'used']],
   ['overview, tokens measure', 'dark,tab=overview', ['Daily tokens'], { measure: 'tokens' }],
   ['models, 7d', 'dark,tab=models', ['across'], { range: '7d' }],
   ['models', 'dark,tab=models', ['across', 'models']],
   ['models drawer', 'dark,tab=models,drawer', ['Requests', 'Cost per 1M tokens']],
   ['models, many (toggle shown)', 'dark,tab=models,many', ['Show 5 more']],
   ['keys', 'dark,tab=keys', ['API keys', 'in 30d']],
+  ['key health', 'dark,tab=keys', ['Expiring soon', 'Expired', 'Near limit', 'Resets monthly']],
   ['ledger', 'light,tab=ledger', ['Daily ledger']],
   ['settings', 'dark,tab=settings', ['Connection', 'Status bar shows', 'follow UTC']],
   ['setup (not connected)', 'dark,setup', ['management key']],
@@ -231,6 +235,39 @@ try {
     check('a rejected key shows its error and stays on setup', !!$('#mgmt') && /rejected|not|invalid|Enter|error/i.test(txt()));
     $('#mgmt').value = 'sk-or-v1-good'; await click('[data-act="save-keys"]'); await wait(1200);
     check('a verified key leads to the dashboard', !!$('[data-act="tab"][data-val="overview"]'));
+  `))
+  report(drive('dark', `
+    let offered = null;
+    window.orca.files = { async saveAs(options) { offered = options; return { status: 'saved' }; } };
+    await click('[data-act="export"]'); await wait(700);
+    check('CSV export offers a daily CSV through the save dialog', offered && /daily/.test(offered.suggestedName) && /spend_usd/.test(offered.data));
+    check('a saved CSV reports success', /CSV saved/.test(txt()));
+    const kind = $('[data-export-kind]');
+    if (kind) kind.value = 'models';
+    await click('[data-act="export"]'); await wait(700);
+    check('the export picker can choose models', offered && /models/.test(offered.suggestedName));
+    window.orca.files.saveAs = async () => ({ status: 'cancelled' });
+    await click('[data-act="export"]'); await wait(700);
+    check('cancelling the save dialog is not reported as success', /Export cancelled/.test(txt()) && !/CSV saved/.test(txt()));
+    window.orca.files.saveAs = async () => { throw new Error('disk unavailable'); };
+    await click('[data-act="export"]'); await wait(700);
+    check('a save error is visible and exporting can be retried', /Export failed: disk unavailable/.test(txt()) && !$('[data-act="export"]').disabled);
+    document.documentElement.style.setProperty('--orca-font-sans', 'monospace');
+    check('the panel follows Orca font preferences', getComputedStyle(document.body).fontFamily.includes('monospace'));
+  `))
+  report(drive('dark,tab=settings', `
+    const budget = $('[data-set="monthlyBudgetUsd"]');
+    check('Settings has an optional monthly budget', !!budget && +budget.value === 0);
+    if (budget) {
+      budget.value = '100'; budget.dispatchEvent(new Event('change', { bubbles: true })); await wait(900);
+      await click('[data-act="tab"][data-val="overview"]'); await wait(800);
+      check('saving a monthly budget shows progress on Overview', !!$('[aria-label="Monthly budget used"]') && /of \\$100.00/.test(txt()));
+      await click('[data-act="tab"][data-val="settings"]'); await wait(500);
+      const input = $('[data-set="monthlyBudgetUsd"]');
+      input.value = '0'; input.dispatchEvent(new Event('change', { bubbles: true })); await wait(900);
+      await click('[data-act="tab"][data-val="overview"]'); await wait(800);
+      check('setting the monthly budget to zero hides progress', !$('[aria-label="Monthly budget used"]'));
+    }
   `))
 } catch (e) {
   fail(`behaviour run: ${e.message}`)

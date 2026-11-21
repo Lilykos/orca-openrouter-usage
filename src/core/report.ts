@@ -76,6 +76,10 @@ export function normalizeKeys(apiKeys: any[]): KeyInfo[] {
     usageDaily: num(k?.usage_daily),
     usageWeekly: num(k?.usage_weekly),
     usageMonthly: num(k?.usage_monthly),
+    byokUsage: num(k?.byok_usage),
+    byokUsageDaily: num(k?.byok_usage_daily),
+    byokUsageWeekly: num(k?.byok_usage_weekly),
+    byokUsageMonthly: num(k?.byok_usage_monthly),
     lastUsedAt: typeof k?.last_used_at === 'string' ? k.last_used_at : null,
   }))
 }
@@ -83,6 +87,10 @@ export function normalizeKeys(apiKeys: any[]): KeyInfo[] {
 /** Cost of one row in USD; BYOK spend is included only when asked for. */
 export function rowCost(row: DayRow, includeByok: boolean): number {
   return includeByok ? row.usage + row.byokUsage : row.usage
+}
+
+export function todaySpend(keys: KeyInfo[], includeByok: boolean): number {
+  return keys.reduce((sum, k) => sum + k.usageDaily + (includeByok ? k.byokUsageDaily ?? 0 : 0), 0)
 }
 
 /** The active measure for one row: cost in USD, or prompt + completion tokens. */
@@ -129,7 +137,7 @@ function rank(rows: DayRow[], keyOf: (r: DayRow) => string, includeByok: boolean
 
 /** True when a key could have spend in the last ~30 days, so its /activity is worth fetching. */
 export function keyMayHaveRecentActivity(k: KeyInfo, now: number): boolean {
-  return k.usage > 0 && k.lastUsedAt !== null && Date.parse(k.lastUsedAt) >= now - 32 * DAY_MS
+  return k.usage + (k.byokUsage ?? 0) > 0 && k.lastUsedAt !== null && Date.parse(k.lastUsedAt) >= now - 32 * DAY_MS
 }
 
 export function buildReport(input: ReportInput): Report {
@@ -156,7 +164,7 @@ export function buildReport(input: ReportInput): Report {
   }
   const tiles: Omit<Tiles, 'monthToDate' | 'monthProjected'> = {
     spend,
-    today: keys.reduce((s, k) => s + k.usageDaily, 0),
+    today: todaySpend(keys, inc),
     tokensIn: prompt,
     tokensOut: completion,
     reasoning,
@@ -237,11 +245,17 @@ export function buildReport(input: ReportInput): Report {
   // Balance: burn is the mean daily spend over the last 7 completed days, ignoring the range.
   const remaining = credits.totalCredits - credits.totalUsage
   let burnPerDay: number | null = null
+  let recentSpendPerDay: number | null = null
   if (rows.length > 0) {
     const from = addDays(today, -BURN_DAYS)
     let sum = 0
-    for (const r of history) if (r.date >= from) sum += rowCost(r, inc)
+    let spend = 0
+    for (const r of history) if (r.date >= from) {
+      sum += r.usage
+      spend += rowCost(r, inc)
+    }
     burnPerDay = sum / BURN_DAYS
+    recentSpendPerDay = spend / BURN_DAYS
   }
   const balance: Balance = {
     remaining,
@@ -267,7 +281,7 @@ export function buildReport(input: ReportInput): Report {
   for (const r of history) if (r.date >= monthStart) monthToDate += rowCost(r, inc)
   const dayOfMonth = Number(today.slice(8, 10))
   const daysInMonth = new Date(Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)), 0)).getUTCDate()
-  const monthProjected = burnPerDay === null ? null : monthToDate + burnPerDay * (daysInMonth - dayOfMonth)
+  const monthProjected = recentSpendPerDay === null ? null : monthToDate + recentSpendPerDay * (daysInMonth - dayOfMonth)
 
   return {
     generatedAt: now,
@@ -279,7 +293,7 @@ export function buildReport(input: ReportInput): Report {
     models,
     keys: keys.map((k): ReportKey => {
       let spend: number | null
-      if (range === 'all') spend = k.usage
+      if (range === 'all') spend = k.usage + (inc ? k.byokUsage ?? 0 : 0)
       else if (keyRows[k.hash]) spend = filterRows(keyRows[k.hash], range, now).reduce((s, r) => s + rowCost(r, inc), 0)
       else spend = keyMayHaveRecentActivity(k, now) ? null : 0
       return { ...k, spend }

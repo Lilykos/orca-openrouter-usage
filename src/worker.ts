@@ -3,7 +3,7 @@
 import type { OrcaWorkerApi } from 'orca/worker'
 import type { DayRow, KeyInfo, Measure, Range, Report, Settings, Status, StatusBarContent } from './protocol'
 import { OpenRouterError, createClient, getActivity, getCredits, getKeyActivity, getKeyMeta, listKeys } from './core/openrouter'
-import { buildReport, keyMayHaveRecentActivity, normalizeActivity, normalizeKeys } from './core/report'
+import { buildReport, keyMayHaveRecentActivity, normalizeActivity, normalizeKeys, todaySpend } from './core/report'
 import { addSnapshot, mergeDays, pruneRows, type Snapshot } from './core/history'
 
 const MGMT_KEY = 'mgmtKey'
@@ -147,7 +147,7 @@ export default function activate(orca: OrcaWorkerApi): void {
       return
     }
     const remaining = cache.credits.totalCredits - cache.credits.totalUsage
-    const today = cache.keys.reduce((sum, k) => sum + k.usageDaily, 0)
+    const today = todaySpend(cache.keys, settings.includeByok)
     const low = settings.lowBalanceUsd
     const tone = low > 0 && remaining <= low / 2 ? 'danger' : low > 0 && remaining <= low ? 'warning' : 'neutral'
     let extra = ''
@@ -195,7 +195,7 @@ export default function activate(orca: OrcaWorkerApi): void {
       next.lowFired = false
     }
     const budget = settings.dailyBudgetUsd
-    const today = cache.keys.reduce((sum, k) => sum + k.usageDaily, 0)
+    const today = todaySpend(cache.keys, settings.includeByok)
     const day = utcDay(Date.now())
     if (budget > 0 && today > budget && alerts.budgetFiredDate !== day) {
       next.budgetFiredDate = day
@@ -224,14 +224,14 @@ export default function activate(orca: OrcaWorkerApi): void {
     for (const h of Object.keys(rows)) if (!live.has(h)) delete rows[h]
     for (const h of Object.keys(fetched)) if (!live.has(h)) delete fetched[h]
     const due = keys.filter(
-      (k) => keyMayHaveRecentActivity(k, now) && (fetched[k.hash]?.usage !== k.usage || fetched[k.hash]?.day !== day),
+      (k) => keyMayHaveRecentActivity(k, now) && (fetched[k.hash]?.usage !== k.usage + (k.byokUsage ?? 0) || fetched[k.hash]?.day !== day),
     )
     for (let i = 0; i < due.length; i += 3) {
       await Promise.all(
         due.slice(i, i + 3).map(async (k) => {
           try {
             rows[k.hash] = pruneRows(mergeDays(rows[k.hash] ?? [], normalizeActivity(await getKeyActivity(client, k.hash))), now)
-            fetched[k.hash] = { usage: k.usage, day }
+            fetched[k.hash] = { usage: k.usage + (k.byokUsage ?? 0), day }
           } catch (e) {
             orca.log(`key activity failed: ${e instanceof OpenRouterError ? e.code : 'error'}`)
           }

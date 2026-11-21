@@ -12,14 +12,22 @@ const MGMT = 'sk-or-v1-fake-management-key'
 const QUERY = { range: '30d', measure: 'cost' } as const
 
 // Fixture keys with the first two stamped as used just now (the real fixture dates age out).
-function recentKeys(bump = 0): unknown {
+function recentKeys(bump = 0, byokDaily = 0): unknown {
   const body = fixture('keys') as { data: { usage: number; last_used_at: string | null }[] }
-  const data = body.data.map((k, i) => (i < 2 ? { ...k, usage: Math.max(k.usage, 1) + bump, last_used_at: new Date().toISOString() } : { ...k, last_used_at: null }))
+  const data = body.data.map((k, i) => (i < 2 ? { ...k, usage: Math.max(k.usage, 1) + bump, byok_usage_daily: i === 0 ? byokDaily : 0, last_used_at: new Date().toISOString() } : { ...k, last_used_at: null }))
   return { data }
 }
 
+// Keep the fixture's newest completed day at yesterday, independent of the test run date.
+function recentActivity(): unknown {
+  const body = fixture('activity') as { data: { date: string }[] }
+  const latest = Math.max(...body.data.map((r) => Date.parse(r.date.slice(0, 10) + 'T00:00:00Z')))
+  const yesterday = Date.parse(new Date(Date.now() - 86_400_000).toISOString().slice(0, 10) + 'T00:00:00Z')
+  return { data: body.data.map((r) => ({ ...r, date: new Date(Date.parse(r.date.slice(0, 10) + 'T00:00:00Z') + yesterday - latest).toISOString().slice(0, 10) })) }
+}
+
 // Routes by path; `managementKey: false` makes /key report a regular key, `fail` makes every call 401.
-function fakeFetch(opts: { managementKey?: boolean; fail?: boolean; failKeyActivity?: boolean; keyCalls?: string[]; usageBump?: number; emptyActivity?: boolean; gate?: Promise<void>; networkDown?: boolean } = {}): typeof fetch {
+function fakeFetch(opts: { managementKey?: boolean; fail?: boolean; failKeyActivity?: boolean; keyCalls?: string[]; usageBump?: number; byokDaily?: number; emptyActivity?: boolean; gate?: Promise<void>; networkDown?: boolean } = {}): typeof fetch {
   return (async (input: RequestInfo | URL) => {
     const url = new URL(String(input))
     const path = url.pathname.replace('/api/v1', '')
@@ -37,11 +45,11 @@ function fakeFetch(opts: { managementKey?: boolean; fail?: boolean; failKeyActiv
         : path === '/credits'
           ? fixture('credits')
           : path === '/keys'
-            ? recentKeys(opts.usageBump)
+            ? recentKeys(opts.usageBump, opts.byokDaily)
             : path === '/activity'
               ? opts.emptyActivity
                 ? { data: [] }
-                : fixture('activity')
+                : recentActivity()
               : null
     return new Response(JSON.stringify(body), { status: body ? 200 : 404 })
   }) as typeof fetch
@@ -238,6 +246,18 @@ test('status bar content follows the setting', async () => {
   assert.ok(/left · ~\d+d left$/.test(lastBar(days.host).text ?? ''), lastBar(days.host).text)
   const out = (await days.worker.request('settings.set', { statusBarContent: 'nonsense' as never })) as Settings
   assert.equal(out.statusBarContent, 'credits-days') // invalid values are ignored
+})
+
+test('BYOK daily totals reach the report, status bar and daily budget alert', async () => {
+  const { host, worker } = await connected({ dailyBudgetUsd: 2, includeByok: true })
+  await withFetch(fakeFetch({ byokDaily: 3 }), () => worker.request('refresh'))
+  const on = (await worker.request('report.get', QUERY)) as Report
+  assert.ok(on.tiles.today >= 3)
+  assert.ok(lastBar(host).text?.includes(`$${on.tiles.today.toFixed(2)} today`))
+  assert.equal(host.callsOf('notifications.show').filter((n) => (n as { title: string }).title.includes('daily budget')).length, 1)
+  await worker.request('settings.set', { includeByok: false })
+  const off = (await worker.request('report.get', QUERY)) as Report
+  assert.ok(Math.abs(on.tiles.today - off.tiles.today - 3) < 1e-9)
 })
 
 test('old stored history is pruned on refresh', async () => {

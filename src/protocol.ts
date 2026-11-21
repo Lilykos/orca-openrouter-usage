@@ -29,6 +29,11 @@ export interface KeyInfo {
   usageDaily: number
   usageWeekly: number
   usageMonthly: number
+  /** Optional only for keys saved by versions before 1.1.0. */
+  byokUsage?: number
+  byokUsageDaily?: number
+  byokUsageWeekly?: number
+  byokUsageMonthly?: number
   lastUsedAt: string | null
 }
 
@@ -41,7 +46,7 @@ export interface ReportKey extends KeyInfo {
 export interface Balance {
   /** Credits left, USD. */
   remaining: number
-  /** Mean daily spend over the last 7 completed UTC days (missing days count as 0), ignoring filters; null with no history. */
+  /** Mean daily credit spend over the last 7 completed UTC days; excludes external BYOK costs. */
   burnPerDay: number | null
   /** remaining / burnPerDay, or null when burn is 0 or unknown. */
   daysLeft: number | null

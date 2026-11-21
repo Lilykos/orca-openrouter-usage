@@ -316,3 +316,28 @@ test('this month honours the BYOK setting', () => {
   assert.equal(mtd(false), 1)
   assert.equal(mtd(true), 5)
 })
+
+test('BYOK key totals follow the toggle for today, this month and lifetime keys', () => {
+  const data = normalizeKeys([{ hash: 'byok', usage: 2, usage_daily: 1, byok_usage: 8, byok_usage_daily: 3 }])
+  const report = (includeByok: boolean) => buildReport(baseInput({ rows: [], keys: data, includeByok }))
+  assert.equal(report(false).tiles.today, 1)
+  assert.equal(report(true).tiles.today, 4)
+  assert.equal(report(true).tiles.monthToDate, 4)
+  assert.equal(report(false).keys[0].spend, 2)
+  assert.equal(report(true).keys[0].spend, 10)
+})
+
+test('BYOK changes the monthly projection but never the credit runway', () => {
+  const data = [row({ date: '2026-11-09', usage: 7, byokUsage: 14 })]
+  const off = buildReport(baseInput({ rows: data, keys: [], includeByok: false }))
+  const on = buildReport(baseInput({ rows: data, keys: [], includeByok: true }))
+  assert.equal(on.balance.burnPerDay, 1)
+  assert.equal(on.balance.daysLeft, off.balance.daysLeft)
+  assert.equal(on.tiles.monthProjected, 21 + 3 * 20)
+})
+
+test('a BYOK-only key can have recent activity', () => {
+  const data = normalizeKeys([{ hash: 'byok', usage: 0, byok_usage: 3, last_used_at: '2026-11-09T12:00:00Z' }])
+  const report = buildReport(baseInput({ rows: [], keys: data, range: '7d' }))
+  assert.equal(report.keys[0].spend, null)
+})

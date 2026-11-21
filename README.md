@@ -26,6 +26,8 @@ orca plugin install Lilykos/orca-openrouter-usage
 
 Orca shows what the plugin is allowed to do and asks you to approve it.
 
+Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.1.0 adds no capabilities, but Orca may ask you to review the new monthly-budget setting. Your key and settings stay with the existing install.
+
 ## Setup
 
 Open the panel and paste your management key; it is verified with OpenRouter before it is saved. The key is stored in the plugin's encrypted secrets (OS keyring) and never leaves the worker process; the panel never sees it. The Settings tab has: connection test, replace or disconnect the key, refresh interval, low-balance alert, daily budget, notifications, status bar item, and whether BYOK usage counts in spend.

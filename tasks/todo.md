@@ -7,4 +7,5 @@
 - [x] Key health badges and Orca fonts verified.
 - [x] Review all changes; check light/dark/narrow layouts; regenerate listing screenshots.
 - [x] Update documentation and version; unit, type, validation and panel checks pass.
-- [ ] Push main and v1.1.0; verify CI and public release; update the installed copy when available.
+- [x] Push main and v1.1.0; verify CI and the public release (both runs passed; a fresh public clone validates).
+- [ ] Update the installed marketplace copy when the catalog offers 1.1.0. It still offers 1.0.0; Orca refuses replacing a marketplace install with a Git URL. Keep the existing key/settings intact and use `orca plugin update lilykos.openrouter-usage --json`. The monthly-budget setting triggers update review, already authorized by the user's request for this release.

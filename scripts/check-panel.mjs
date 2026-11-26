@@ -80,7 +80,8 @@ const views = [
   ['comparison', 'dark', ['previous 7'], { range: '7d' }],
   ['comparison needs history', 'dark,new', ['after more history'], { range: '7d' }],
   ['monthly budget', 'dark,budget', ['Budget $25.00', 'budget']],
-  ['tokens measure', 'dark', ['Tokens', 'prompt to output', 'tokens in total'], { measure: 'tokens' }],
+  ['tokens measure', 'dark', ['Tokens', 'cache hit', 'tokens in total'], { measure: 'tokens' }],
+  ['open sections', 'dark,open', ['prompt to output', 'Cached prompt', 'Click a day to select it']],
   ['7-day range', 'dark', ['last 7 days'], { range: '7d' }],
   ['many models', 'dark,many', ['13 used', 'extra-model-7']],
   ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'inactive keys']],
@@ -90,7 +91,7 @@ const views = [
   ['vivid gold banner', 'dark,banner=gold,vivid', ['Credits left']],
   ['quiet graphite banner, low credits', 'light,low,banner=graphite', ['Credits left', 'days left']],
   ['setup (not connected)', 'dark,setup', ['management key']],
-  ['empty range', 'dark,empty', ['No models in this range', 'No tokens in this range']],
+  ['empty range', 'dark,empty', ['No models in this range']],
   ['stale data', 'dark,stale', ['cached data']],
   ['low balance', 'dark,low', ['days left', 'until around']],
   ['new account (usage)', 'dark,new', ['No models', 'No recent spend']],
@@ -245,6 +246,14 @@ try {
     today.dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(250);
     check('today has no per-model split yet and says so', /after the day ends/.test($('#u-models').innerText));
     await click('[data-act="unpin"]');
+    check('Token mix and Activity start closed', $('[data-act="toggle"][data-val="mix"]').getAttribute('aria-expanded') === 'false' && !$('#b-mix') && !$('.heat'));
+    check('a closed section still shows a one-line summary', /cache hit/.test($('#u-mix').innerText) && /in total/.test($('#heat-ro').innerText));
+    await click('[data-act="toggle"][data-val="mix"]');
+    check('the arrow opens Token mix', $('[data-act="toggle"][data-val="mix"]').getAttribute('aria-expanded') === 'true' && /Cached prompt/.test($('#b-mix').innerText));
+    await click('[data-act="toggle"][data-val="heat"]');
+    window.orca.emit('report.changed', { at: Date.now() }); await wait(900);
+    check('open sections stay open after a refresh', !!$('#b-mix') && !!$('.heat'));
+    check('the open state is remembered for next time', (JSON.parse(localStorage.getItem('openrouter-usage:prefs') || '{}').open || {}).heat === true);
     const cells = [...document.querySelectorAll('.heat .cell')];
     check('the heatmap covers 26 weeks', cells.length === 182);
     const old = cells[cells.length - 45];

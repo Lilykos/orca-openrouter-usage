@@ -201,6 +201,13 @@ h2 .scope { font-weight: 400; color: var(--muted); }
 html.light .ucard { background: color-mix(in srgb, var(--fg) 1.8%, var(--bg)); }
 .ucard .quad > div { background: color-mix(in srgb, var(--fg) 5%, var(--bg)); }
 .ucard .mbox { border: 0; margin-bottom: -6px; }
+.coll-h { margin-bottom: 0; }
+.coll-h h2 { min-width: 0; }
+.coll { display: inline-flex; align-items: center; gap: 4px; border: 0; background: none; padding: 2px 4px 2px 0; margin: -2px 0; font: inherit; color: inherit; cursor: pointer; border-radius: 5px; }
+.coll .chev { color: var(--muted); transition: transform .15s ease; flex: none; }
+.coll[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.coll:hover .chev { color: var(--fg); }
+.coll-h + * { margin-top: 8px; }
 /* models */
 .mbox { height: 262px; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; padding: 0 6px; margin-left: -6px; margin-right: -6px; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .mbox::-webkit-scrollbar { width: 6px; }
@@ -346,6 +353,7 @@ const ICON = {
   warn: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
   ext: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>',
   check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+  chev: '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>',
   x: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
 };
 // The fan-out motif: one input splitting into many models. Thin, faded, decorative.
@@ -384,7 +392,8 @@ const state = {
   pendingPin: null,        // a heatmap day to pin once the wider range has loaded
   model: null,             // model selected in the list (range mode)
   inactiveOpen: false,
-  heatFocus: null
+  heatFocus: null,
+  open: { mix: false, heat: false }   // collapsible Usage sections; closed until opened, then remembered
 };
 
 let reqSeq = 0;
@@ -467,6 +476,7 @@ function loadPrefs() {
     if (RANGES.some(([v]) => v === p.keysRange)) state.keysRange = p.keysRange;
     if (MEASURES.some(([v]) => v === p.measure)) state.measure = p.measure;
     if (TABS.some(([id]) => id === p.tab)) state.tab = p.tab;
+    if (p.open && typeof p.open === 'object') state.open = { mix: p.open.mix === true, heat: p.open.heat === true };
   } catch (e) { /* storage unavailable: defaults */ }
   try {
     const d = JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]');
@@ -474,7 +484,7 @@ function loadPrefs() {
   } catch (e) { /* storage unavailable: show every warning */ }
 }
 function savePrefs() {
-  try { localStorage.setItem(PREF_KEY, JSON.stringify({ range: state.range, keysRange: state.keysRange, measure: state.measure, tab: state.tab })); } catch (e) { /* ignore */ }
+  try { localStorage.setItem(PREF_KEY, JSON.stringify({ range: state.range, keysRange: state.keysRange, measure: state.measure, tab: state.tab, open: state.open })); } catch (e) { /* ignore */ }
 }
 function saveDismissed() {
   try { localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissed].slice(-200))); } catch (e) { /* ignore */ }
@@ -725,26 +735,33 @@ function modelDetailHtml(rep, m) {
   return `<div class="mdetail"><div class="kv">${cells.map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>${tok === 0 ? '<p class="note-row" style="padding-bottom:0">No token counts: this model is billed another way, such as per minute of audio.</p>' : ''}</div>`;
 }
 
+// A section header that opens and closes its card. The title stays an h2; the button inside it carries the state.
+function collHead(key, id, title, scope, side, sideId) {
+  const open = !!state.open[key];
+  return `<div class="sec-h coll-h"><h2 id="${id}"><button type="button" class="coll" data-act="toggle" data-val="${key}" data-fk="toggle:${key}" aria-expanded="${open}" aria-controls="b-${key}">${ICON.chev}<span>${title}</span>${scope ? ` <span class="scope">· ${esc(scope)}</span>` : ''}</button></h2><span class="side"${sideId ? ` id="${sideId}" aria-live="polite"` : ''}>${side}</span></div>`;
+}
+
 function mixHtml(rep) {
   const f = state.pin;
-  const head = (side) => `<div class="sec-h"><h2 id="h-mix">Token mix <span class="scope">· ${esc(scopeLabel(rep))}</span></h2><span class="side">${side}</span></div>`;
+  const head = (side) => collHead('mix', 'h-mix', 'Token mix', scopeLabel(rep), side);
   let x = rep.mix;
   if (f) {
     const a = aggregate(rep, f);
-    if (a.todayOnly) return head('') + '<p class="note-row">Token counts for today arrive after the UTC day ends.</p>';
+    if (a.todayOnly) return head('') + (state.open.mix ? '<p class="note-row" id="b-mix">Token counts for today arrive after the UTC day ends.</p>' : '');
     x = a.mix;
   }
   const prompt = x.cachedPrompt + x.uncachedPrompt;
-  if (prompt + x.completion === 0) return head('') + `<p class="note-row">No tokens ${f ? 'on this day' : 'in this range'}.</p>`;
+  if (prompt + x.completion === 0) return head('') + (state.open.mix ? `<p class="note-row" id="b-mix">No tokens ${f ? 'on this day' : 'in this range'}.</p>` : '');
+  if (!state.open.mix) return head(prompt > 0 ? pct(x.cachedPrompt / prompt) + ' cache hit' : '');
   const ratio = x.completion > 0 ? prompt / x.completion : null;
   const cell = (k, v, s) => `<div><div class="k">${k}</div><div class="v">${esc(compact(v))}</div><div class="s">${esc(s)}</div></div>`;
-  return head(compact(prompt + x.completion) + ' tokens') + `<div class="quad-top">${prompt > 0 ? `<span><b>${pct(x.cachedPrompt / prompt)}</b> cache hit</span>` : ''}${ratio != null ? `<span>·</span><span><b>${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}:1</b> prompt to output</span>` : ''}</div>
+  return head(compact(prompt + x.completion) + ' tokens') + `<div id="b-mix"><div class="quad-top">${prompt > 0 ? `<span><b>${pct(x.cachedPrompt / prompt)}</b> cache hit</span>` : ''}${ratio != null ? `<span>·</span><span><b>${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}:1</b> prompt to output</span>` : ''}</div>
     <div class="quad">
       ${cell('Cached prompt', x.cachedPrompt, prompt ? pct(x.cachedPrompt / prompt) + ' of prompt' : '')}
       ${cell('Uncached prompt', x.uncachedPrompt, prompt ? pct(x.uncachedPrompt / prompt) + ' of prompt' : '')}
       ${cell('Completion', x.completion, x.reasoning > 0 ? 'includes reasoning' : 'output tokens')}
       ${cell('Reasoning', x.reasoning, x.completion ? pct(x.reasoning / x.completion) + ' of completion' : '')}
-    </div>`;
+    </div></div>`;
 }
 
 function usageHtml(rep) {
@@ -758,9 +775,9 @@ function usageHtml(rep) {
     <section class="ucard" aria-labelledby="h-models" id="u-models">${modelsHtml(rep)}</section>
     <section class="ucard" aria-labelledby="h-mix" id="u-mix">${mixHtml(rep)}</section>
     <section class="ucard" aria-labelledby="h-heat">
-      <div class="sec-h"><h2 id="h-heat">Activity <span class="scope">· 26 weeks</span></h2><span class="side" id="heat-ro" aria-live="polite"></span></div>
-      <svg class="heat" role="grid" aria-label="Daily ${TOK() ? 'tokens' : 'spend'} for 26 weeks. Arrow keys move, Enter selects a day."></svg>
-      <div class="heat-foot"><span class="scale" aria-hidden="true">Less <i style="background:var(--h0)"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i> More</span><span>Click a day to select it</span></div>
+      ${collHead('heat', 'h-heat', 'Activity', '26 weeks', '', 'heat-ro')}
+      ${state.open.heat ? `<div id="b-heat"><svg class="heat" role="grid" aria-label="Daily ${TOK() ? 'tokens' : 'spend'} for 26 weeks. Arrow keys move, Enter selects a day."></svg>
+      <div class="heat-foot"><span class="scale" aria-hidden="true">Less <i style="background:var(--h0)"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i> More</span><span>Click a day to select it</span></div></div>` : ''}
     </section>`;
 }
 
@@ -829,7 +846,8 @@ function heatDays(rep) {
 function drawHeat() {
   const rep = state.report;
   const svg = $('#app .heat');
-  if (!svg || !rep) return;
+  if (!rep) return;
+  if (!svg) { heatReadout(null); return; }
   const days = heatDays(rep);
   const W = Math.max(200, Math.round(svg.getBoundingClientRect().width));
   const off = (weekday(days[0].date) + 6) % 7, cols = Math.floor((days.length - 1 + off) / 7) + 1;
@@ -1307,6 +1325,7 @@ app.addEventListener('click', (e) => {
       break;
     case 'model': state.model = state.model === v ? null : v; render(); break;
     case 'unpin': state.pin = null; state.hover = null; render(); break;
+    case 'toggle': state.open = { ...state.open, [v]: !state.open[v] }; savePrefs(); render(); break;
     case 'inactive': state.inactiveOpen = !state.inactiveOpen; render(); break;
     case 'menu': state.menu = !state.menu; render(); if (state.menu) focusFk('export:daily'); break;
     case 'export': exportCsv(v); break;
@@ -1657,8 +1676,9 @@ function makeMock() {
 
 if (!window.orca || !window.orca.plugin) {
   window.orca = makeMock();
-  // Preview states for screenshots: #pin=<days ago>, #model (select the top model), #scroll=<element id>.
+  // Preview states for screenshots: #pin=<days ago>, #model (select the top model), #scroll=<element id>, #open (open the collapsed sections).
   const h = location.hash;
+  if (/(?:^#|,)open(?:,|$)/.test(h)) state.open = { mix: true, heat: true };
   const pinAgo = (h.match(/(?:^#|,)pin=(\d+)/) || [])[1];
   const scrollTo = (h.match(/(?:^#|,)scroll=([a-z-]+)/) || [])[1];
   if (pinAgo || /(?:^#|,)model(?:,|$)/.test(h) || scrollTo) devHook = () => {
@@ -1671,7 +1691,9 @@ if (!window.orca || !window.orca.plugin) {
 
 /* ---------- start ---------- */
 
+const previewOpen = state.open.mix && state.open.heat;
 loadPrefs();
+if (previewOpen) state.open = { mix: true, heat: true };
 // #tab=keys selects a tab for this load only; it is not written to prefs.
 const hashTab = (location.hash.match(/(?:^#|,)tab=([a-z]+)/) || [])[1];
 if (TABS.some(([id]) => id === hashTab)) state.tab = hashTab;

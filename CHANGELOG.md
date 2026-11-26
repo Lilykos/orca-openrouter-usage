@@ -11,6 +11,7 @@ A redesign: one answer first, detail on demand.
 - Spend, Models, Token mix and Activity each sit in a quiet card, so the page reads as a few calm blocks.
 - Models sit in a fixed-height box that scrolls inside, with every model listed, so the page does not jump around. Click a model to open its details inline (requests, cost per request, change against the previous period, tokens, cache hit, cost per 1M tokens) and see its share in every bar.
 - **Token mix** is now four numbers that follow the range or the selected day: cached prompt, uncached prompt, completion and reasoning, with the cache hit rate and the prompt-to-output ratio.
+- Token mix and Activity start closed, each with an arrow to open it and a one-line summary while closed (cache hit, total). What you open stays open.
 - The **activity heatmap** covers 26 weeks, follows Cost or Tokens, and selects a day when you click it, widening the range when needed.
 - **Keys** has its own 7D, 30D and All switch, shows badges only when a key needs attention, and folds inactive keys away.
 - Settings keep the same options, grouped into Account, Appearance, Alerts and budgets, Status bar and Data. CSV export moved to the ⋯ menu.

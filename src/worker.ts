@@ -158,9 +158,7 @@ export default function activate(orca: OrcaWorkerApi): void {
     const today = todaySpend(cache.keys, settings.includeByok)
     const low = settings.lowBalanceUsd
     let tone: 'neutral' | 'warning' | 'danger' = low > 0 && remaining <= low / 2 ? 'danger' : low > 0 && remaining <= low ? 'warning' : 'neutral'
-    const report = await currentReport('7d', 'cost', settings)
-    const days = report?.balance.daysLeft
-    const lines = [`OpenRouter: ${usd(remaining)} left · ${usd(today)} today${days != null ? ` · about ${Math.round(days)} day${Math.round(days) === 1 ? '' : 's'} left` : ''}`]
+    const lines = [`OpenRouter: ${usd(remaining)} left · ${usd(today)} today`]
     // The text is what was spent today: OpenRouter plus DeepSeek when it is in dollars.
     let spent = today
     const ds = await deepSeekView()
@@ -170,7 +168,6 @@ export default function activate(orca: OrcaWorkerApi): void {
         const money = b.currency === 'USD' ? usd : (n: number) => `${n.toFixed(2)} ${b.currency}`
         const parts = [`${money(b.total)} left`]
         if (b.spentToday != null) parts.push(`about ${money(b.spentToday)} today`)
-        if (b.daysLeft != null) parts.push(`about ${Math.round(b.daysLeft)} day${Math.round(b.daysLeft) === 1 ? '' : 's'} left`)
         lines.push(`DeepSeek: ${parts.join(' · ')}`)
         if (b.currency === 'USD' && b.spentToday != null) spent += b.spentToday
         if (ds.available === false || (b.daysLeft != null && b.daysLeft <= 1)) tone = 'danger'
@@ -178,7 +175,6 @@ export default function activate(orca: OrcaWorkerApi): void {
       }
       if (ds.authFailed && tone === 'neutral') tone = 'warning'
     }
-    lines.push('Click to show or hide the panel.')
     await orca.host.call('statusBar.update', {
       id: 'balance',
       text: `${usd(spent)} today`,

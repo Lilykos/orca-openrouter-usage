@@ -255,7 +255,7 @@ test('the status bar shows what was spent today, with each account in the toolti
   const bar = lastBar(host)
   assert.equal(bar.text, `$${report.tiles.today.toFixed(2)} today`)
   assert.ok(bar.tooltip?.startsWith('OpenRouter: $'), bar.tooltip)
-  assert.ok(bar.tooltip?.includes(' left · '))
+  assert.ok(/^OpenRouter: \$[\d.]+ left · \$[\d.]+ today$/.test(bar.tooltip ?? ''), bar.tooltip)
   assert.ok(!bar.tooltip?.includes('DeepSeek')) // no DeepSeek key, no DeepSeek part
   assert.ok(!bar.tooltip?.includes('\n')) // one line: Orca's tooltips do not break lines
 })

@@ -75,7 +75,7 @@ if (!chrome) {
 // ---- 2. every view renders what it should, with no junk values ----
 section('Views')
 const views = [
-  ['usage', 'dark', ['Credits left', 'Add credits', 'Spend', 'on pace for', 'Models', 'Token mix', 'cache hit', 'Activity']],
+  ['usage', 'dark', ['OpenRouter Usage', 'Credits left', 'Add credits', 'Spend', 'on pace for', 'Models', 'Token mix', 'cache hit', 'Activity']],
   ['usage, light', 'light', ['Credits left', 'Token mix', 'Activity']],
   ['comparison', 'dark', ['previous 7'], { range: '7d' }],
   ['comparison needs history', 'dark,new', ['after more history'], { range: '7d' }],
@@ -313,6 +313,8 @@ try {
     await click('[data-act="menu"]');
     document.body.click(); await wait(250);
     check('clicking elsewhere closes the menu', !$('.menu'));
+    await document.fonts.ready;
+    check('the banner title uses its embedded font', document.fonts.check('600 18px "OR Title"') && getComputedStyle($('.bn-title')).fontFamily.startsWith('"OR Title"'));
     document.documentElement.style.setProperty('--orca-font-sans', 'monospace');
     check('the panel follows Orca font preferences', getComputedStyle(document.body).fontFamily.includes('monospace'));
   `))

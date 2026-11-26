@@ -61,3 +61,7 @@ node scripts/check-panel.mjs # panel renders, click-through, HTML-injection and 
 ## Licence
 
 MIT
+
+## Credits
+
+The banner title uses [Outfit](https://github.com/Outfitio/Outfit-Fonts) (Copyright 2021 The Outfit Project Authors), embedded under the SIL Open Font License 1.1 and cut down to the letters it needs.

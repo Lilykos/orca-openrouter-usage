@@ -243,6 +243,13 @@ html:not(.light) .kav { color: hsl(var(--h) 70% 72%); background: hsl(var(--h) 5
 .kl-t { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--muted); }
 .kl-t.warn span:first-child { color: var(--warn); }
 .klim .meter { height: 4px; }
+.kitem.faded > .krow3 { opacity: .55; }
+.kitem.faded > .krow3:hover, .kitem.faded > .krow3:focus-visible { opacity: 1; }
+.small-keys { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 4px; padding: 8px 0 0; border: 0; border-top: 1px solid var(--hair); background: none; color: var(--muted); font-size: 12px; cursor: pointer; opacity: .8; text-align: left; }
+.small-keys:hover { color: var(--fg-2); opacity: 1; }
+.small-keys .chev { transition: transform .15s ease; }
+.small-keys[aria-expanded="true"] .chev { transform: rotate(90deg); }
+.small-keys .sk-v { margin-left: auto; font-variant-numeric: tabular-nums; }
 .kitem.open .mdetail { margin: 0 0 10px 38px; padding: 10px 12px; border: 0; border-radius: 8px; background: color-mix(in srgb, var(--fg) 4%, var(--bg)); }
 .kd-meter { height: 4px; margin-bottom: 4px; }
 .kd-reset { margin-bottom: 8px; }
@@ -401,7 +408,8 @@ const state = {
   pin: null,               // pinned date range: { from, to }
   pendingPin: null,        // a heatmap day to pin once the wider range has loaded
   model: null,             // model selected in the list (range mode)
-  keyOpen: null,           // key hash whose details are open
+  keyOpen: null,
+  smallKeys: false,        // show the keys under 1% of spend           // key hash whose details are open
   heatFocus: null,
   open: { mix: false, heat: false, inactive: false }   // collapsible Usage sections; closed until opened, then remembered
 };
@@ -984,7 +992,7 @@ function keysHtml(rep) {
     return `<div class="mdetail">${meter}<div class="kv">${cells.map(([a, v]) => `<div><div class="k">${a}</div><div class="v" title="${esc(v)}">${esc(v)}</div></div>`).join('')}</div></div>`;
   };
   const hue = (hash) => (parseInt(String(hash || '').slice(0, 6), 16) || 0) % 360;
-  const row = (k, quiet) => {
+  const row = (k, quiet, faded) => {
     const v = keySpend(k, r);
     const open = state.keyOpen === k.hash;
     const share = total > 0 && v ? v / total : 0;
@@ -993,7 +1001,7 @@ function keysHtml(rep) {
     const initial = (Array.from(String(name).trim())[0] || '?').toUpperCase();
     const meta = k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used';
     const limit = k.limit != null && !quiet ? `<span class="klim"><span class="kl-t${h.limit ? ' warn' : ''}"><span>${pct(h.usedFraction || 0)} of ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit</span>${k.limitRemaining != null ? `<span>${esc(money(Math.max(0, k.limitRemaining)))} left</span>` : ''}</span><span class="meter" role="meter" aria-label="${esc(name)} limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((h.usedFraction || 0) * 100)}"><i class="now${h.limit ? ' warn' : ''}" style="width:${((h.usedFraction || 0) * 100).toFixed(1)}%"></i></span></span>` : '';
-    return `<li class="kitem${open ? ' open' : ''}"><button type="button" class="krow3${quiet ? ' quiet' : ''}" aria-expanded="${open}" data-act="key" data-val="${esc(k.hash)}" data-fk="key:${esc(k.hash)}">
+    return `<li class="kitem${open ? ' open' : ''}${faded ? ' faded' : ''}"><button type="button" class="krow3${quiet ? ' quiet' : ''}" aria-expanded="${open}" data-act="key" data-val="${esc(k.hash)}" data-fk="key:${esc(k.hash)}">
       <span class="kav" style="--h:${hue(k.hash)}" aria-hidden="true">${esc(initial)}</span>
       <span class="kmain"><span class="kn" title="${esc(name)}">${esc(name)}</span><span class="kmeta">${esc(meta)}${badges(k)}</span></span>
       <span class="kright"><span class="kv1"${v == null ? ' title="Still loading this key\'s activity"' : ''}>${v == null ? '—' : esc(money(v))}</span>${quiet ? '' : `<span class="kv2">${pct(share)}</span>`}</span>
@@ -1003,7 +1011,16 @@ function keysHtml(rep) {
     <div class="sec-h"><h2 id="h-keys">API keys <span class="scope">· ${scope}</span></h2><div class="ctl">${seg}</div></div>`;
   if (!active.length && !inactive.length) return h + '<p class="note-row">No API keys on this account yet.</p></section>';
   h += `<div class="readout"><span class="v">${esc(money(total))}</span><span class="m">${active.length} active key${active.length === 1 ? '' : 's'}</span></div>`;
-  h += active.length ? `<ul class="mlist klist2">${active.map((k) => row(k, false)).join('')}</ul>` : '<p class="note-row">No active keys.</p>';
+  // Keys under 1% of the range's spend fold away, unless they need attention or are still loading.
+  const needsLook = (k) => !!(k.health && (k.health.limit || k.health.expiry));
+  const isSmall = (k) => total > 0 && keySpend(k, r) != null && (keySpend(k, r) || 0) / total < 0.01 && !needsLook(k);
+  const main = active.filter((k) => !isSmall(k));
+  const small = active.filter(isSmall);
+  h += active.length ? `<ul class="mlist klist2">${main.map((k) => row(k, false)).join('')}${state.smallKeys ? small.map((k) => row(k, false, true)).join('') : ''}</ul>` : '<p class="note-row">No active keys.</p>';
+  if (small.length) {
+    const sv = small.reduce((a, k) => a + (keySpend(k, r) || 0), 0);
+    h += `<button type="button" class="small-keys" data-act="small-keys" data-fk="small-keys" aria-expanded="${state.smallKeys}">${ICON.chev}<span>${state.smallKeys ? 'Hide' : 'Show'} ${small.length} small key${small.length === 1 ? '' : 's'}</span><span class="sk-v">${esc(money(sv))} · under 1% each</span></button>`;
+  }
   h += '</section>';
   if (inactive.length) {
     h += `<section class="ucard" aria-labelledby="h-inactive">${collHead('inactive', 'h-inactive', 'Inactive keys', '', `${inactive.length} key${inactive.length === 1 ? '' : 's'}`)}
@@ -1370,6 +1387,7 @@ app.addEventListener('click', (e) => {
     case 'model': state.model = state.model === v ? null : v; render(); break;
     case 'unpin': state.pin = null; state.hover = null; render(); break;
     case 'toggle': state.open = { ...state.open, [v]: !state.open[v] }; savePrefs(); render(); break;
+    case 'small-keys': state.smallKeys = !state.smallKeys; render(); break;
     case 'key': state.keyOpen = state.keyOpen === v ? null : v; render(); break;
     case 'menu': state.menu = !state.menu; render(); if (state.menu) focusFk('export:daily'); break;
     case 'export': exportCsv(v); break;
@@ -1549,6 +1567,7 @@ function makeMock() {
     { name: 'n8n automations', limitReset: 'monthly', label: 'sk-or-v1-…72f4', limit: 20, usage: 19, d: 0.7, w: 3.9, m: 18.8, s7: 3.9, s30: 18.8, sAll: 19, agoMin: 180, disabled: false },
     { name: 'staging', expiresAt: new Date(Date.now() - 86400e3).toISOString(), label: '', limit: 10, usage: 0.4, d: 0, w: 0, m: 0.4, s7: 0, s30: 0.4, sAll: 0.4, agoMin: 5760, disabled: true },
     { name: 'laptop-cli', label: 'sk-or-v1-…e9f0', limit: null, usage: 5.6, d: 0.3, w: 1.9, m: 4.7, s7: 1.9, s30: 4.7, sAll: 5.6, agoMin: 30, disabled: false },
+    { name: 'notebooks', label: 'sk-or-v1-…7b3e', limit: null, usage: 0.4, d: 0, w: 0.05, m: 0.21, s7: 0.05, s30: 0.21, sAll: 0.4, agoMin: 4000, disabled: false },
     { name: 'ci-bot', label: '', limit: null, usage: 0, d: 0, w: 0, m: 0, s7: 0, s30: 0, sAll: 0, agoMin: 2880, disabled: false },
     { name: 'old-experiments', label: '', limit: 25, usage: 0, d: 0, w: 0, m: 0, s7: 0, s30: 0, sAll: 0, agoMin: null, disabled: false }
   ].map((k) => ({ ...k, hash: hex(64) }));

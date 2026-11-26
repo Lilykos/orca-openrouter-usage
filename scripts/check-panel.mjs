@@ -84,7 +84,7 @@ const views = [
   ['open sections', 'dark,open', ['prompt to output', 'Cached prompt', 'Click a day to select it']],
   ['7-day range', 'dark', ['last 7 days'], { range: '7d' }],
   ['many models', 'dark,many', ['13 used', 'extra-model-7']],
-  ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'Inactive keys', '2 keys']],
+  ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'small keys', 'Inactive keys', '2 keys']],
   ['key health', 'dark,tab=keys', ['Expires', 'Near limit', 'monthly limit']],
   ['key warnings under the banner', 'dark', ['expires', 'has used 94% of its']],
   ['settings', 'dark,tab=settings', ['Account', 'Appearance', 'Colour', 'Vivid', 'Alerts and budgets', 'Low balance', 'Status bar', 'Next to credits', 'Data', 'Refresh every', 'Count BYOK usage', 'Days follow UTC']],
@@ -288,6 +288,10 @@ try {
     check('clicking a key opens its details inline', !!d && /All time/.test(d.innerText) && /This month/.test(d.innerText) && /Last used/.test(d.innerText));
     await click('[data-act="key"][aria-expanded="true"]');
     check('clicking it again closes them', !$('.mdetail'));
+    check('keys under 1% of spend start hidden behind a button', /Show 2 small keys/.test(txt()) && !/ci-bot/.test($('#h-keys').closest('section').querySelector('.klist2').innerText));
+    await click('[data-act="small-keys"]');
+    check('the button shows them, faded', document.querySelectorAll('.kitem.faded').length === 2 && /ci-bot/.test(txt()) && /Hide 2 small keys/.test(txt()));
+    check('keys that need attention are never hidden', /n8n automations/.test(txt()) && /prod-api/.test(txt()));
     check('inactive keys start folded away', $('[data-act="toggle"][data-val="inactive"]').getAttribute('aria-expanded') === 'false' && !$('#b-inactive'));
     await click('[data-act="toggle"][data-val="inactive"]');
     check('the arrow shows inactive keys', /Disabled/.test($('#b-inactive').innerText) && /Expired/.test($('#b-inactive').innerText));

@@ -216,7 +216,7 @@ try {
     await click('[data-act="disconnect-ask"]');
     check('Disconnect asks for confirmation first', !!$('[data-act="disconnect-yes"]'));
     await click('[data-act="disconnect-no"]');
-    check('cancelling keeps the connection', !$('[data-act="disconnect-yes"]') && /Management key, stored/.test(txt()));
+    check('cancelling keeps the connection', !$('[data-act="disconnect-yes"]') && /Connected with a management key/.test(txt()));
     const toggle = $('[data-set="statusBar"]');
     if (toggle) { toggle.click(); await wait(700); check('the status bar picker is disabled while the status bar is off', !!document.querySelector('select[data-set="statusBarContent"][disabled]')); toggle && $('[data-set="statusBar"]').click(); await wait(500); }
     else check('the status bar toggle exists', false);
@@ -348,7 +348,9 @@ try {
     $('#ds-key').value = 'bad'; await click('[data-act="ds-save"]'); await wait(600);
     check('a rejected DeepSeek key shows its error', /DeepSeek rejected this key/.test(txt()) && !!$('#ds-key'));
     $('#ds-key').value = 'sk-good-deepseek-key'; await click('[data-act="ds-save"]'); await wait(900);
-    check('a verified DeepSeek key is shown masked', /sk-…-key/.test(txt()) && /verified and saved/.test(txt()));
+    check('a saved DeepSeek key is shown by name, not by key', /Connected to DeepSeek/.test(txt()) && !/sk-…/.test(txt()) && !/sk-or-v1/.test(txt()));
+    await click('[data-act="ds-test"]'); await wait(700);
+    check('DeepSeek has its own Test connection', /balance updated/.test(txt()));
     await click('[data-act="tab"][data-val="usage"]');
     check('and its balance card appears on Usage', !!$('#h-ds') && /\\$12.50/.test($('#h-ds').closest('section').innerText));
     await click('[data-act="tab"][data-val="settings"]');

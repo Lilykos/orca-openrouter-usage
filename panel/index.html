@@ -218,8 +218,7 @@ html.light .ucard { background: color-mix(in srgb, var(--fg) 1.8%, var(--bg)); }
 .ds-foot .link { white-space: nowrap; flex: none; }
 .ds-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--hair); }
 .ds-sec { border-top: 1px solid var(--hair); padding: 10px 0 10px; }
-.ds-sec .t { font-size: 13px; font-weight: 500; }
-.ds-sec .d { font-size: 12px; color: var(--muted); margin: 1px 0 8px; }
+.ds-off { color: var(--muted) !important; font-size: 15px; font-weight: 500; }
 /* models */
 .mbox { height: 262px; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; padding: 0 6px; margin-left: -6px; margin-right: -6px; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .mbox::-webkit-scrollbar { width: 6px; }
@@ -299,7 +298,7 @@ html:not(.light) .kav { color: hsl(var(--h) 70% 72%); background: hsl(var(--h) 5
 .conn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 0 10px; }
 .conn .ic { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--neutral-bg); color: var(--ok); }
 .conn .who { min-width: 0; }
-.conn .who b { font: 600 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.conn .who b { font-weight: 600; font-size: 13px; }
 .conn .who div { font-size: 12px; color: var(--muted); }
 .conn-acts { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 0 10px; align-items: center; }
 .conn-res { font-size: 12px; margin: 0 0 8px; }
@@ -427,6 +426,8 @@ const state = {
   dsAddOpen: false,
   dsMsg: null,             // { ok, text }
   dsConfirm: false,
+  dsBusy: false,
+  dsTest: null,            // { ok: true } | { ok: false, error }
   smallKeys: false,        // show the keys under 1% of spend           // key hash whose details are open
   heatFocus: null,
   open: { mix: false, heat: false, inactive: false }   // collapsible Usage sections; closed until opened, then remembered
@@ -1103,15 +1104,17 @@ function deepSeekSettingsHtml() {
       <div class="acts"><button type="button" class="btn primary" id="ds-save" data-act="ds-save" data-fk="ds-save">Verify &amp; save</button><button type="button" class="link" data-act="ds-open-keys" data-fk="ds-open-keys">Get a DeepSeek key ${ICON.ext}</button></div>
       ${msg}</div>`;
   if (!ds) {
-    return `<div class="ds-sec"><div class="t">DeepSeek <span class="muted">· optional</span></div><div class="d">Track a DeepSeek balance too. Its card appears on Usage once a key is saved.</div>
-      ${state.dsAddOpen ? form : `<button type="button" class="btn" data-act="ds-add" data-fk="ds-add">Add DeepSeek key</button>${m && m.ok ? msg : ''}`}</div>`;
+    return `<div class="ds-sec"><div class="conn"><span class="ic ds-off">+</span><div class="who"><b>DeepSeek <span class="muted" style="font-weight:400">· optional</span></b><div>Track a DeepSeek balance too. Its card appears on Usage once a key is saved.</div></div></div>
+      ${state.dsAddOpen ? form : `<div class="conn-acts"><button type="button" class="btn" data-act="ds-add" data-fk="ds-add">Add DeepSeek key</button></div>${m && m.ok ? msg : ''}`}</div>`;
   }
-  const remove = state.dsConfirm
+  const t = state.dsTest;
+  const acts = state.dsConfirm
     ? `<div class="confirm"><span>Remove the DeepSeek key from Orca?</span><button type="button" class="btn danger" data-act="ds-remove-yes" data-fk="ds-remove-yes">Remove</button><button type="button" class="btn ghost" data-act="ds-remove-no" data-fk="ds-remove-no">Cancel</button></div>`
-    : `<button type="button" class="btn" data-act="ds-add" data-fk="ds-add" aria-expanded="${state.dsAddOpen}">Replace key</button><button type="button" class="btn ghost danger" data-act="ds-remove" data-fk="ds-remove">Remove</button>`;
-  return `<div class="ds-sec"><div class="t">DeepSeek</div>
-    <div class="conn"><span class="ic"${ds.authFailed ? ' style="color:var(--danger)"' : ''}>${ds.authFailed ? ICON.warn : ICON.check}</span><div class="who"><b>${esc(ds.label)}</b><div>${ds.authFailed ? 'DeepSeek rejected this key. Replace it.' : "API key, stored in Orca's encrypted secrets. Used only to read the balance."}</div></div></div>
-    <div class="conn-acts">${remove}</div>${state.dsAddOpen ? form : m ? msg : ''}</div>`;
+    : `<button type="button" class="btn" data-act="ds-test" data-fk="ds-test">${state.dsBusy ? '<span class="spinner" aria-hidden="true"></span>Testing…' : 'Test connection'}</button><button type="button" class="btn" data-act="ds-add" data-fk="ds-add" aria-expanded="${state.dsAddOpen}">Replace key</button><button type="button" class="btn ghost danger" data-act="ds-remove" data-fk="ds-remove">Remove</button>`;
+  return `<div class="ds-sec">
+    <div class="conn"><span class="ic"${ds.authFailed ? ' style="color:var(--danger)"' : ''}>${ds.authFailed ? ICON.warn : ICON.check}</span><div class="who"><b>DeepSeek</b><div>${ds.authFailed ? 'DeepSeek rejected the saved key. Replace it.' : "Connected with an API key, stored in Orca's encrypted secrets. Used only to read the balance."}</div></div></div>
+    ${t ? `<p class="conn-res ${t.ok ? 'ok-t' : 'err-t'}" role="${t.ok ? 'status' : 'alert'}">${t.ok ? 'Connected to DeepSeek · balance updated' : esc(t.error)}</p>` : ''}
+    <div class="conn-acts">${acts}</div>${state.dsAddOpen ? form : m ? msg : ''}</div>`;
 }
 
 function settingsHtml() {
@@ -1128,8 +1131,8 @@ function settingsHtml() {
     : `<button type="button" class="btn" data-act="conn-test" data-fk="conn-test">${state.connBusy ? '<span class="spinner" aria-hidden="true"></span>Testing…' : 'Test connection'}</button><button type="button" class="btn" data-act="replace" data-fk="replace" aria-expanded="${state.replaceOpen}">Replace key</button><button type="button" class="btn ghost danger" data-act="disconnect-ask" data-fk="disconnect-ask">Disconnect</button>`;
   const recent = state.savedAt && Date.now() - state.savedAt < 1600;
   const account = group('conn', 'Account', '', `
-    <div class="conn"><span class="ic">${ICON.check}</span><div class="who"><b>${esc(st.keyLabel || 'Management key')}</b><div>Management key, stored in Orca's encrypted secrets</div></div></div>
-    ${r ? `<p class="conn-res ${r.ok ? 'ok-t' : 'err-t'}" role="${r.ok ? 'status' : 'alert'}">${r.ok ? 'Connected as ' + esc(r.label) : esc(r.error)}</p>` : ''}
+    <div class="conn"><span class="ic">${ICON.check}</span><div class="who"><b>OpenRouter</b><div>Connected with a management key, stored in Orca's encrypted secrets</div></div></div>
+    ${r ? `<p class="conn-res ${r.ok ? 'ok-t' : 'err-t'}" role="${r.ok ? 'status' : 'alert'}">${r.ok ? 'Connected to OpenRouter' : esc(r.error)}</p>` : ''}
     <div class="conn-acts">${conn}</div>
     ${state.replaceOpen ? keyFormHtml() : ''}
     ${deepSeekSettingsHtml()}`);
@@ -1335,7 +1338,7 @@ async function saveKeys() {
   try { res = await req('keys.save', { mgmtKey: m }); } catch (e) { res = { ok: false, error: errMsg(e) }; }
   if (res && res.ok) {
     mEl.value = '';
-    state.keyMsg = { ok: true, text: 'Key verified and saved' };
+    state.keyMsg = { ok: true, text: 'Connected to OpenRouter' };
     state.replaceOpen = false;
     state.report = null;
     await refreshStatus();
@@ -1359,7 +1362,7 @@ async function saveDeepSeek() {
   if (res && res.ok) {
     el.value = '';
     state.dsAddOpen = false;
-    state.dsMsg = { ok: true, text: 'DeepSeek key verified and saved' };
+    state.dsMsg = { ok: true, text: 'Connected to DeepSeek' };
     try { state.ds = await req('deepseek.get'); } catch (e) { /* the next refresh brings it */ }
     render();
   } else {
@@ -1367,6 +1370,19 @@ async function saveDeepSeek() {
     btn.textContent = 'Verify & save';
     say(false, (res && res.error) || 'Could not verify the key.');
   }
+}
+
+async function testDeepSeek() {
+  if (state.dsBusy) return;
+  state.dsBusy = true;
+  state.dsTest = null;
+  render();
+  let res;
+  try { res = await req('deepseek.test'); } catch (e) { res = { ok: false, error: errMsg(e) }; }
+  state.dsBusy = false;
+  state.dsTest = res && res.ok ? { ok: true } : { ok: false, error: (res && res.error) || 'Connection test failed.' };
+  try { state.ds = await req('deepseek.get'); } catch (e) { /* keep the last view */ }
+  render();
 }
 
 async function removeDeepSeek() {
@@ -1462,6 +1478,7 @@ function selectTab(id) {
     state.dsAddOpen = false;
     state.dsMsg = null;
     state.dsConfirm = false;
+    state.dsTest = null;
   }
   savePrefs();
   render();
@@ -1501,6 +1518,7 @@ app.addEventListener('click', (e) => {
     case 'toggle': state.open = { ...state.open, [v]: !state.open[v] }; savePrefs(); render(); break;
     case 'ds-add': state.dsAddOpen = !state.dsAddOpen; state.dsMsg = null; render(); if (state.dsAddOpen) focusFk('ds-key'); break;
     case 'ds-save': saveDeepSeek(); break;
+    case 'ds-test': testDeepSeek(); break;
     case 'ds-open-keys': openUrl(DS_KEYS_URL); break;
     case 'ds-topup': openUrl(DS_TOPUP_URL); break;
     case 'ds-remove': state.dsConfirm = true; render(); focusFk('ds-remove-yes'); break;
@@ -1819,6 +1837,7 @@ function makeMock() {
       return { ok: true, label: dsMock.label };
     },
     'deepseek.clear': async () => { dsMock = null; return { ok: true }; },
+    'deepseek.test': async () => (dsMock ? { ok: true } : { ok: false, error: 'No DeepSeek key saved.' }),
     'status.get': async () => ({
       configured, keyLabel: configured ? LABEL : null, refreshing: false,
       lastRefreshAt: Date.now() - 120e3,

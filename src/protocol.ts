@@ -220,6 +220,8 @@ declare module 'orca' {
     'deepseek.get': { output: DeepSeekView | null }
     /** Verifies a DeepSeek API key by reading its balance, then stores it. */
     'deepseek.save': { input: { apiKey: string }; output: { ok: true; label: string } | { ok: false; error: string } }
+    /** Re-reads the balance with the stored DeepSeek key; a success also records the reading. */
+    'deepseek.test': { output: { ok: true } | { ok: false; error: string } }
     /** Forgets the DeepSeek key and everything read with it. */
     'deepseek.clear': { output: { ok: true } }
   }

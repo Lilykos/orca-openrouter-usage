@@ -456,6 +456,13 @@ export default function activate(orca: OrcaWorkerApi): void {
     return { ok: true as const, label }
   })
 
+  orca.panels.handle('deepseek.test', async () => {
+    if (!(await orca.secrets.get(DS_KEY))) return { ok: false as const, error: 'No DeepSeek key saved.' }
+    await refreshDeepSeek()
+    const meta = await load<DsMeta>('dsMeta', { error: null, authFailed: false })
+    return meta.error ? { ok: false as const, error: meta.error } : { ok: true as const }
+  })
+
   orca.panels.handle('deepseek.clear', async () => {
     dsEpoch++
     await orca.secrets.delete(DS_KEY)

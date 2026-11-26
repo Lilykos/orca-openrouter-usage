@@ -498,3 +498,15 @@ test('removing the DeepSeek key forgets the key and everything read with it', as
   assert.equal(await worker.request('deepseek.get'), null)
 })
 
+test('testing the DeepSeek connection re-reads the balance and reports failures', async () => {
+  const { worker } = await connected()
+  assert.deepEqual(await worker.request('deepseek.test'), { ok: false, error: 'No DeepSeek key saved.' })
+  const ds = { total: '9.00' }
+  await withFetch(withDeepSeek(ds), () => worker.request('deepseek.save', { apiKey: DS }))
+  ds.total = '8.50'
+  assert.deepEqual(await withFetch(withDeepSeek(ds), () => worker.request('deepseek.test')), { ok: true })
+  assert.equal(((await worker.request('deepseek.get')) as DeepSeekView).balances[0].total, 8.5)
+  const bad = await withFetch(withDeepSeek({ total: '1', status: 401 }), () => worker.request('deepseek.test'))
+  assert.deepEqual(bad, { ok: false, error: 'DeepSeek rejected this key. It may be mistyped or revoked.' })
+})
+

@@ -208,15 +208,19 @@ html.light .ucard { background: color-mix(in srgb, var(--fg) 1.8%, var(--bg)); }
 .coll[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .coll:hover .chev { color: var(--fg); }
 .coll-h + * { margin-top: 8px; }
-.ds-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 12px; }
-.ds-row + .ds-row { border-top: 1px solid var(--hair); padding-top: 8px; margin-top: 8px; }
-.ds-v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
-.ds-s { font-size: 12px; color: var(--muted); margin-top: 1px; }
-.ds-s.warn { color: var(--warn); }
-.ds-s svg { vertical-align: -2px; margin-right: 4px; }
-.ds-split { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ds-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.ds-stats > div { background: color-mix(in srgb, var(--fg) 5%, var(--bg)); border-radius: 7px; padding: 7px 10px; min-width: 0; }
+.ds-stats .k { font-size: 11.5px; color: var(--muted); }
+.ds-stats .v { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-stats .s { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ds-stats .warn .v { color: var(--warn); }
+.ds-stats .warn .v svg { vertical-align: -1px; margin-right: 3px; }
+.ds-line { font-size: 12px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
+.ds-stats + .ds-line + .ds-stats { margin-top: 10px; }
+.ds-q { display: inline-grid; place-items: center; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--border); font-size: 9.5px; margin-left: 2px; cursor: help; vertical-align: 1px; }
 .ds-foot .link { white-space: nowrap; flex: none; }
 .ds-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--hair); }
+@media (max-width: 340px) { .ds-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .ds-sec { border-top: 1px solid var(--hair); padding: 10px 0 10px; }
 .ds-off { color: var(--muted) !important; font-size: 15px; font-weight: 500; }
 /* models */
@@ -429,7 +433,7 @@ const state = {
   dsTest: null,            // { ok: true } | { ok: false, error }
   smallKeys: false,        // show the keys under 1% of spend           // key hash whose details are open
   heatFocus: null,
-  open: { mix: false, heat: false, inactive: false }   // collapsible Usage sections; closed until opened, then remembered
+  open: { mix: false, heat: false, inactive: false, ds: false }   // collapsible Usage sections; closed until opened, then remembered
 };
 
 let reqSeq = 0;
@@ -514,7 +518,7 @@ function loadPrefs() {
     if (RANGES.some(([v]) => v === p.keysRange)) state.keysRange = p.keysRange;
     if (MEASURES.some(([v]) => v === p.measure)) state.measure = p.measure;
     if (TABS.some(([id]) => id === p.tab)) state.tab = p.tab;
-    if (p.open && typeof p.open === 'object') state.open = { mix: p.open.mix === true, heat: p.open.heat === true, inactive: p.open.inactive === true };
+    if (p.open && typeof p.open === 'object') state.open = { mix: p.open.mix === true, heat: p.open.heat === true, inactive: p.open.inactive === true, ds: p.open.ds === true };
   } catch (e) { /* storage unavailable: defaults */ }
   try {
     const d = JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]');
@@ -811,26 +815,37 @@ function mixHtml(rep) {
     </div></div>`;
 }
 
-// Only when a DeepSeek key is saved. DeepSeek reports a balance, not usage, so this is all there is to show.
+// Only when a DeepSeek key is saved. DeepSeek reports a balance, not usage: today's spend is the drop in
+// the balance across the readings each refresh takes since UTC midnight.
 function deepSeekCardHtml() {
   const ds = state.ds;
   if (!ds) return '';
-  const upd = ds.updatedAt ? `<span data-rel="${ds.updatedAt}" data-prefix="Updated ">Updated ${relTime(ds.updatedAt)}</span>` : '';
+  const b0 = ds.balances[0];
+  const today = (b) => (b.spentToday == null ? '—' : cur(b.spentToday, b.currency));
+  const summary = ds.authFailed ? '<span class="err-t">Key rejected</span>'
+    : b0 ? `${esc(cur(b0.total, b0.currency))} left · ${esc(today(b0))} today` : '';
+  const head = collHead('ds', 'h-ds', 'DeepSeek', '', summary);
+  if (!state.open.ds) return `<section class="ucard" aria-labelledby="h-ds">${head}</section>`;
+  const mins = (state.settings && state.settings.refreshMinutes) || 5;
+  const hint = `DeepSeek reports a balance, not usage. The balance is read every ${mins} minute${mins === 1 ? '' : 's'}; today is how much it dropped since midnight UTC, and days left use the last 7 days. Top-ups are ignored.`;
   let body;
   if (!ds.balances.length) body = `<p class="note-row">${esc(ds.error || 'Waiting for the first balance reading.')}</p>`;
   else body = ds.balances.map((b) => {
-    const runway = b.daysLeft != null
-      ? `About ${Math.round(b.daysLeft)} day${Math.round(b.daysLeft) === 1 ? '' : 's'} left at ${esc(cur(b.burnPerDay, b.currency))} a day`
-      : b.burnPerDay === 0 ? 'No spend in the last 7 days' : 'Days left appear after about 12 hours of readings';
     const short = b.daysLeft != null && b.daysLeft <= 3;
-    return `<div class="ds-row"><div class="ds-main"><div class="ds-v">${esc(cur(b.total, b.currency))}${ds.available === false ? ' <span class="badge danger">Used up</span>' : ''}</div><div class="ds-s${short ? ' warn' : ''}">${short ? ICON.warn : ''}${runway}</div></div>
-      <div class="ds-split"><span>Topped up ${esc(cur(b.toppedUp, b.currency))}</span><span>Granted ${esc(cur(b.granted, b.currency))}</span></div></div>`;
+    const days = b.daysLeft != null ? `${Math.round(b.daysLeft)} day${Math.round(b.daysLeft) === 1 ? '' : 's'}` : b.burnPerDay === 0 ? 'No spend' : 'Soon';
+    const daysSub = b.daysLeft != null ? `at ${esc(cur(b.burnPerDay, b.currency))} a day` : b.burnPerDay === 0 ? 'in the last 7 days' : 'after 12 h of readings';
+    return `<div class="ds-stats">
+        <div><div class="k">Balance</div><div class="v">${esc(cur(b.total, b.currency))}</div><div class="s">${ds.available === false ? '<span class="err-t">Used up</span>' : esc(b.currency)}</div></div>
+        <div><div class="k">Spent today</div><div class="v">${esc(today(b))}</div><div class="s">UTC day</div></div>
+        <div class="${short ? 'warn' : ''}"><div class="k">Days left</div><div class="v">${short ? ICON.warn : ''}${days}</div><div class="s">${daysSub}</div></div>
+      </div>
+      <div class="ds-line"><span>Topped up ${esc(cur(b.toppedUp, b.currency))} · Granted ${esc(cur(b.granted, b.currency))}</span></div>`;
   }).join('');
   const err = ds.error && ds.balances.length ? `<p class="fine err-t" style="margin-top:6px">${esc(ds.error)} Showing the last reading.</p>` : '';
-  return `<section class="ucard" aria-labelledby="h-ds">
-    <div class="sec-h"><h2 id="h-ds">DeepSeek <span class="scope">· balance</span></h2><span class="side">${upd}</span></div>
-    ${body}${err}
-    <div class="ds-foot"><span class="fine">DeepSeek reports a balance only, so there is no per-model or daily breakdown.</span><button type="button" class="link" data-act="ds-topup" data-fk="ds-topup">Top up ${ICON.ext}</button></div>
+  const upd = ds.updatedAt ? `<span data-rel="${ds.updatedAt}" data-prefix="Read ">Read ${relTime(ds.updatedAt)}</span>` : '';
+  return `<section class="ucard" aria-labelledby="h-ds">${head}
+    <div id="b-ds">${body}${err}
+    <div class="ds-foot"><span class="fine" title="${esc(hint)}">${upd}${upd ? ' · ' : ''}balance only <span class="ds-q" aria-label="${esc(hint)}">?</span></span><button type="button" class="link" data-act="ds-topup" data-fk="ds-topup">Top up ${ICON.ext}</button></div></div>
   </section>`;
 }
 
@@ -1823,7 +1838,7 @@ function makeMock() {
   let dsMock = has('deepseek') || has('deepseek-low') ? { label: 'sk-…9f2a', total: has('deepseek-low') ? 2.1 : 12.5 } : null;
   const dsView = () => dsMock && {
     label: dsMock.label, available: dsMock.total > 0,
-    balances: [{ currency: 'USD', total: dsMock.total, granted: Math.min(2, dsMock.total), toppedUp: Math.max(0, dsMock.total - 2), burnPerDay: 1.2, daysLeft: dsMock.total / 1.2 }],
+    balances: [{ currency: 'USD', total: dsMock.total, granted: Math.min(2, dsMock.total), toppedUp: Math.max(0, dsMock.total - 2), burnPerDay: 1.2, daysLeft: dsMock.total / 1.2, spentToday: 0.9 }],
     updatedAt: Date.now() - 120e3, error: null, authFailed: false
   };
   const handlers = {
@@ -1891,7 +1906,7 @@ if (!window.orca || !window.orca.plugin) {
   window.orca = makeMock();
   // Preview states for screenshots: #pin=<days ago>, #model (select the top model), #scroll=<element id>, #open (open the collapsed sections).
   const h = location.hash;
-  if (/(?:^#|,)open(?:,|$)/.test(h)) state.open = { mix: true, heat: true, inactive: true };
+  if (/(?:^#|,)open(?:,|$)/.test(h)) state.open = { mix: true, heat: true, inactive: true, ds: true };
   const pinAgo = (h.match(/(?:^#|,)pin=(\d+)/) || [])[1];
   const scrollTo = (h.match(/(?:^#|,)scroll=([a-z-]+)/) || [])[1];
   if (pinAgo || /(?:^#|,)model(?:,|$)/.test(h) || scrollTo) devHook = () => {
@@ -1906,7 +1921,7 @@ if (!window.orca || !window.orca.plugin) {
 
 const previewOpen = state.open.mix && state.open.heat;
 loadPrefs();
-if (previewOpen) state.open = { mix: true, heat: true, inactive: true };
+if (previewOpen) state.open = { mix: true, heat: true, inactive: true, ds: true };
 // #tab=keys selects a tab for this load only; it is not written to prefs.
 const hashTab = (location.hash.match(/(?:^#|,)tab=([a-z]+)/) || [])[1];
 if (TABS.some(([id]) => id === hashTab)) state.tab = hashTab;

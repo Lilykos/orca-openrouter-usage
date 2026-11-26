@@ -5,6 +5,7 @@
 - Optional **DeepSeek** balance. Add a DeepSeek API key under Settings → Account, and a DeepSeek card appears on Usage. It shows your balance per currency (topped up and granted), how many days it lasts at your recent rate, and a Top up link. Without a key nothing DeepSeek-related is shown.
 - DeepSeek only reports a balance, not usage, so the rate comes from balance readings taken at each refresh over the last 7 days. Top-ups are ignored, and a rate needs about 12 hours of readings.
 - Settings → Account lists OpenRouter and DeepSeek by name, each with Test connection, Replace key and Disconnect or Remove. Testing DeepSeek also takes a fresh balance reading.
+- The DeepSeek card folds under an arrow with "balance left · spent today" in its header; open, it shows balance, spent today and days left side by side.
 - Warnings under the banner when the DeepSeek balance is used up, has about 3 days or less left, or the key is rejected.
 - The DeepSeek key is verified, stored in Orca's encrypted secrets and only used for `GET https://api.deepseek.com/user/balance`. Removing it forgets the key and every reading.
 - The status bar shows only what you spent today (OpenRouter, plus DeepSeek when it is in dollars). Hover it for each account's balance and today's spend. Click it to show or hide the panel. It turns amber or red when either account runs low. The old "Next to credits" choice is gone.

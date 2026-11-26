@@ -97,7 +97,8 @@ const views = [
   ['new account (usage)', 'dark,new', ['No models', 'No recent spend']],
   ['new account (keys)', 'dark,new,tab=keys', ['No API keys']],
   ['offline', 'dark,offline', ["Couldn't load your usage"]],
-  ['DeepSeek card with a saved key', 'dark,deepseek', ['DeepSeek', 'balance', 'days left at', 'Top up', 'Topped up']],
+  ['DeepSeek card with a saved key', 'dark,deepseek', ['DeepSeek', '$12.50 left · $0.90 today']],
+  ['DeepSeek card opened', 'dark,deepseek,open', ['Balance', 'Spent today', 'Days left', 'Topped up', 'Top up', 'balance only']],
   ['DeepSeek low warning', 'light,deepseek-low', ['DeepSeek has about 2 days left']],
 ]
 // Seeds the panel's remembered range/measure in a temp copy, since the hash only picks tab and state.
@@ -351,7 +352,9 @@ try {
     await click('[data-act="ds-test"]'); await wait(700);
     check('DeepSeek has its own Test connection', /balance updated/.test(txt()));
     await click('[data-act="tab"][data-val="usage"]');
-    check('and its balance card appears on Usage', !!$('#h-ds') && /\\$12.50/.test($('#h-ds').closest('section').innerText));
+    check('and its balance card appears on Usage, closed with a summary', !!$('#h-ds') && /\\$12.50 left/.test($('#h-ds').closest('section').innerText) && !$('#b-ds'));
+    await click('[data-act="toggle"][data-val="ds"]');
+    check('its arrow opens balance, spent today and days left', /Spent today/.test($('#b-ds').innerText) && /Days left/.test($('#b-ds').innerText));
     await click('[data-act="tab"][data-val="settings"]');
     await click('[data-act="ds-remove"]');
     check('removing the DeepSeek key asks first', !!$('[data-act="ds-remove-yes"]'));

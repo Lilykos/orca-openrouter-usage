@@ -225,11 +225,25 @@ button.mrow:hover { background: var(--hover); }
 .mrow[aria-expanded="true"] .bar i { background: var(--bar); }
 .mrow[aria-expanded="true"] .n { font-weight: 600; }
 .mrow.more .n { color: var(--fg-2); }
-.krow2 { grid-template-columns: minmax(0, 1fr) auto 38px; }
-.krow2 .n { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.krow2 .kn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; font-weight: 500; }
-.krow2 .kmeta { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.krow2 .lim.warn { color: var(--warn); }
+.klist2 { margin-top: 6px; }
+.kitem + .kitem { border-top: 1px solid var(--hair); }
+.krow3 { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; column-gap: 10px; row-gap: 8px; align-items: center; width: calc(100% + 12px); margin: 0 -6px; padding: 10px 6px; border: 0; background: transparent; border-radius: 7px; text-align: left; cursor: pointer; font-size: 13px; }
+.krow3:hover { background: var(--hover); }
+.kav { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: hsl(var(--h) 55% 38%); background: hsl(var(--h) 60% 50% / .16); }
+html:not(.light) .kav { color: hsl(var(--h) 70% 72%); background: hsl(var(--h) 50% 50% / .18); }
+.krow3.quiet .kav { filter: grayscale(1); opacity: .6; }
+.kmain { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kn { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.krow3.quiet .kn { color: var(--fg-2); font-weight: 500; }
+.kmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; color: var(--muted); min-width: 0; }
+.kright { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+.kv1 { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kv2 { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.klim { grid-column: 2 / -1; display: flex; flex-direction: column; gap: 4px; }
+.kl-t { display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: var(--muted); }
+.kl-t.warn span:first-child { color: var(--warn); }
+.klim .meter { height: 4px; }
+.kitem.open .mdetail { margin: 0 0 10px 38px; padding: 10px 12px; border: 0; border-radius: 8px; background: color-mix(in srgb, var(--fg) 4%, var(--bg)); }
 .kd-meter { height: 4px; margin-bottom: 4px; }
 .kd-reset { margin-bottom: 8px; }
 .mdetail { padding: 8px 0 12px; border-bottom: 1px solid var(--hair); margin-bottom: 4px; }
@@ -966,28 +980,34 @@ function keysHtml(rep) {
       ['Expires', k.expiresAt ? dShort(k.expiresAt.slice(0, 10)) : 'Never'],
       ['Key', k.label || '—']
     ];
-    const meter = k.limit != null ? `<div class="meter kd-meter" role="meter" aria-label="${esc(keyName(k))} limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((h.usedFraction || 0) * 100)}"><i class="now${h.limit ? ' warn' : ''}" style="width:${((h.usedFraction || 0) * 100).toFixed(1)}%"></i></div>${k.limitReset ? `<p class="fine kd-reset">Resets ${RESET[k.limitReset]} (UTC)</p>` : ''}` : '';
+    const meter = k.limit != null && k.limitReset ? `<p class="fine kd-reset">The limit resets ${RESET[k.limitReset]}, on UTC days.</p>` : '';
     return `<div class="mdetail">${meter}<div class="kv">${cells.map(([a, v]) => `<div><div class="k">${a}</div><div class="v" title="${esc(v)}">${esc(v)}</div></div>`).join('')}</div></div>`;
   };
+  const hue = (hash) => (parseInt(String(hash || '').slice(0, 6), 16) || 0) % 360;
   const row = (k, quiet) => {
     const v = keySpend(k, r);
     const open = state.keyOpen === k.hash;
     const share = total > 0 && v ? v / total : 0;
-    const meta = [k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used'].join('');
-    return `<li><button type="button" class="mrow krow2" aria-expanded="${open}" data-act="key" data-val="${esc(k.hash)}" data-fk="key:${esc(k.hash)}" title="${esc(keyName(k))}">
-      <span class="n"><span class="kn">${esc(keyName(k))}</span>${badges(k)}</span><span class="val"${v == null ? ' title="Still loading this key\'s activity"' : ''}>${v == null ? '—' : esc(money(v))}</span><span class="pct">${quiet ? '' : pct(share)}</span>
-      <span class="kmeta">${esc(meta)}${k.limit != null ? ' · ' : ''}${limitLine(k)}</span>
-      ${quiet ? '' : `<span class="bar" aria-hidden="true"><i style="width:${Math.max(1, share * 100).toFixed(1)}%"></i></span>`}</button>${open ? detail(k) : ''}</li>`;
+    const h = k.health || {};
+    const name = keyName(k);
+    const initial = (Array.from(String(name).trim())[0] || '?').toUpperCase();
+    const meta = k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used';
+    const limit = k.limit != null && !quiet ? `<span class="klim"><span class="kl-t${h.limit ? ' warn' : ''}"><span>${pct(h.usedFraction || 0)} of ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit</span>${k.limitRemaining != null ? `<span>${esc(money(Math.max(0, k.limitRemaining)))} left</span>` : ''}</span><span class="meter" role="meter" aria-label="${esc(name)} limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((h.usedFraction || 0) * 100)}"><i class="now${h.limit ? ' warn' : ''}" style="width:${((h.usedFraction || 0) * 100).toFixed(1)}%"></i></span></span>` : '';
+    return `<li class="kitem${open ? ' open' : ''}"><button type="button" class="krow3${quiet ? ' quiet' : ''}" aria-expanded="${open}" data-act="key" data-val="${esc(k.hash)}" data-fk="key:${esc(k.hash)}">
+      <span class="kav" style="--h:${hue(k.hash)}" aria-hidden="true">${esc(initial)}</span>
+      <span class="kmain"><span class="kn" title="${esc(name)}">${esc(name)}</span><span class="kmeta">${esc(meta)}${badges(k)}</span></span>
+      <span class="kright"><span class="kv1"${v == null ? ' title="Still loading this key\'s activity"' : ''}>${v == null ? '—' : esc(money(v))}</span>${quiet ? '' : `<span class="kv2">${pct(share)}</span>`}</span>
+      ${limit}</button>${open ? detail(k) : ''}</li>`;
   };
   let h = `<section class="ucard" aria-labelledby="h-keys">
     <div class="sec-h"><h2 id="h-keys">API keys <span class="scope">· ${scope}</span></h2><div class="ctl">${seg}</div></div>`;
   if (!active.length && !inactive.length) return h + '<p class="note-row">No API keys on this account yet.</p></section>';
   h += `<div class="readout"><span class="v">${esc(money(total))}</span><span class="m">${active.length} active key${active.length === 1 ? '' : 's'}</span></div>`;
-  h += active.length ? `<ul class="mlist">${active.map((k) => row(k, false)).join('')}</ul>` : '<p class="note-row">No active keys.</p>';
+  h += active.length ? `<ul class="mlist klist2">${active.map((k) => row(k, false)).join('')}</ul>` : '<p class="note-row">No active keys.</p>';
   h += '</section>';
   if (inactive.length) {
     h += `<section class="ucard" aria-labelledby="h-inactive">${collHead('inactive', 'h-inactive', 'Inactive keys', '', `${inactive.length} key${inactive.length === 1 ? '' : 's'}`)}
-      ${state.open.inactive ? `<ul class="mlist" id="b-inactive">${inactive.map((k) => row(k, true)).join('')}</ul>` : ''}</section>`;
+      ${state.open.inactive ? `<ul class="mlist klist2" id="b-inactive">${inactive.map((k) => row(k, true)).join('')}</ul>` : ''}</section>`;
   }
   return h;
 }

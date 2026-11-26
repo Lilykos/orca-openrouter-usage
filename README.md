@@ -16,7 +16,8 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
   - **Settings**: verify, replace or disconnect your key, refresh interval, alerts, budgets, the status bar item, BYOK counting, and the banner's colour and vivid switch, with a live preview.
 - An optional **DeepSeek** balance: add a DeepSeek API key in Settings and a card shows its balance and how long it lasts. Hidden when no key is saved.
 - **CSV exports** of daily totals, models or API keys from the ⋯ menu.
-- A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a budget is passed.
+- A status bar item with what you spent today (`$4.18 today`). Hover it for each account's balance, today's spend and days left; click it to open the panel. It turns amber or red when credits run low.
+- Notifications when credits run low or a budget is passed.
 
 ## Install
 

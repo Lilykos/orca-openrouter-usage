@@ -87,7 +87,7 @@ const views = [
   ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'small keys', 'Inactive keys', '2 keys']],
   ['key health', 'dark,tab=keys', ['Expires', 'Near limit', 'monthly limit']],
   ['key warnings under the banner', 'dark', ['expires', 'has used 94% of its']],
-  ['settings', 'dark,tab=settings', ['Account', 'Appearance', 'Colour', 'Vivid', 'Alerts and budgets', 'Low balance', 'Status bar', 'Next to credits', 'Data', 'Refresh every', 'Count BYOK usage', 'Days follow UTC']],
+  ['settings', 'dark,tab=settings', ['Account', 'Appearance', 'Colour', 'Vivid', 'Alerts and budgets', 'Low balance', 'Status bar', "Show today's spend", 'Data', 'Refresh every', 'Count BYOK usage', 'Days follow UTC']],
   ['vivid gold banner', 'dark,banner=gold,vivid', ['Credits left']],
   ['quiet graphite banner, low credits', 'light,low,banner=graphite', ['Credits left', 'days left']],
   ['setup (not connected)', 'dark,setup', ['management key']],
@@ -218,8 +218,7 @@ try {
     await click('[data-act="disconnect-no"]');
     check('cancelling keeps the connection', !$('[data-act="disconnect-yes"]') && /Connected with a management key/.test(txt()));
     const toggle = $('[data-set="statusBar"]');
-    if (toggle) { toggle.click(); await wait(700); check('the status bar picker is disabled while the status bar is off', !!document.querySelector('select[data-set="statusBarContent"][disabled]')); toggle && $('[data-set="statusBar"]').click(); await wait(500); }
-    else check('the status bar toggle exists', false);
+    check('the status bar has one switch and no content picker', !!toggle && !document.querySelector('select[data-set="statusBarContent"]'));
   `))
   report(drive('dark', `
     localStorage.clear();

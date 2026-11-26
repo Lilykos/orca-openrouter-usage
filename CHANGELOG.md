@@ -7,6 +7,8 @@
 - Settings → Account lists OpenRouter and DeepSeek by name, each with Test connection, Replace key and Disconnect or Remove. Testing DeepSeek also takes a fresh balance reading.
 - Warnings under the banner when the DeepSeek balance is used up, has about 3 days or less left, or the key is rejected.
 - The DeepSeek key is verified, stored in Orca's encrypted secrets and only used for `GET https://api.deepseek.com/user/balance`. Removing it forgets the key and every reading.
+- The status bar shows only what you spent today (OpenRouter, plus DeepSeek when it is in dollars). Hover it for each account on its own line: balance, today's spend and days left. Click it to show or hide the panel. It turns amber or red when either account runs low. The old "Next to credits" choice is gone.
+- DeepSeek's spend today is the drop in its balance since UTC midnight, ignoring top-ups, so it is approximate.
 - Fixed: changing a setting right after opening Settings could be undone by the settings loading in.
 
 ## 1.3.0

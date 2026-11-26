@@ -112,23 +112,6 @@
         "default": true
       },
       {
-        "key": "statusBarContent",
-        "title": "Status bar shows",
-        "description": "What the status bar item says next to your credits left.",
-        "type": "string",
-        "default": "credits-today",
-        "enum": [
-          "credits",
-          "credits-today",
-          "credits-days"
-        ],
-        "enumLabels": [
-          "Credits left",
-          "Credits left and today's spend",
-          "Credits left and days left"
-        ]
-      },
-      {
         "key": "includeByok",
         "title": "Count BYOK usage in spend",
         "description": "Include requests made with your own provider keys in the spend figures.",
@@ -169,7 +152,15 @@
         "id": "balance",
         "text": "OpenRouter",
         "icon": "gauge",
-        "tooltip": "OpenRouter credits left"
+        "tooltip": "OpenRouter and DeepSeek spend today",
+        "command": "togglePanel"
+      }
+    ],
+    "commands": [
+      {
+        "id": "togglePanel",
+        "title": "OpenRouter Usage: Show or hide the right sidebar",
+        "action": "sidebar.right.toggle"
       }
     ]
   },

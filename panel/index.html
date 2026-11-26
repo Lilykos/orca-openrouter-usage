@@ -372,7 +372,6 @@ const RANGE_DAYS = { '7d': 7, '30d': 30 };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const SBC = [['credits', 'Nothing else'], ['credits-today', "Today's spend"], ['credits-days', 'Days left']];
 const HEAT_DAYS = 182;
 const WEEKLY_AFTER = 92;   // the All range draws weekly bars once it holds more days than this
 
@@ -1150,8 +1149,7 @@ function settingsHtml() {
     ${row('Monthly budget', 'When spend or its pace passes', num('monthlyBudgetUsd', 'Monthly budget in dollars', '$', '', 'min="0" step="any"'))}
     ${row('Desktop notifications', 'Also notify outside the panel', sw('notifications', 'Desktop notifications'))}`);
   const bar = group('sb', 'Status bar', '', `
-    ${row('Show credits', '', sw('statusBar', 'Show credits in the status bar'))}
-    ${row('Next to credits', '', `<select class="select" aria-label="Status bar shows" data-set="statusBarContent" data-fk="set:statusBarContent"${s.statusBar ? '' : ' disabled'}>${SBC.map(([v, l]) => `<option value="${v}"${s.statusBarContent === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`, !s.statusBar)}`);
+    ${row('Show today\'s spend', 'Hover it for each account; click it to open this panel', sw('statusBar', 'Show today\'s spend in the status bar'))}`);
   const data = group('data', 'Data', '', `
     ${row('Refresh every', 'How often Orca checks OpenRouter', num('refreshMinutes', 'Refresh interval in minutes', '', 'min', 'min="1" max="120" step="1"'))}
     ${row('Count BYOK usage', 'Requests made with your own provider keys', sw('includeByok', 'Count BYOK usage in spend'))}`);
@@ -1729,14 +1727,13 @@ function makeMock() {
   const NEW = has('new');
   const DOWN = has('offline') ? "Can't reach OpenRouter. Check your internet connection." : has('revoked') ? 'OpenRouter rejected this key. It may be mistyped or revoked.' : null;
   let configured = !has('setup');
-  const settings = { refreshMinutes: 15, lowBalanceUsd: 10, dailyBudgetUsd: 0, monthlyBudgetUsd: has('budget') ? 25 : 0, notifications: true, statusBar: true, statusBarContent: 'credits-today', includeByok: true, bannerColor: (location.hash.match(/(?:^#|,)banner=([a-z]+)/) || [])[1] || 'purple', bannerVivid: has('vivid') };
+  const settings = { refreshMinutes: 15, lowBalanceUsd: 10, dailyBudgetUsd: 0, monthlyBudgetUsd: has('budget') ? 25 : 0, notifications: true, statusBar: true, includeByok: true, bannerColor: (location.hash.match(/(?:^#|,)banner=([a-z]+)/) || [])[1] || 'purple', bannerVivid: has('vivid') };
   const clampSettings = (p) => {
     const out = {};
     if ('refreshMinutes' in p) out.refreshMinutes = Math.min(120, Math.max(1, Math.round(+p.refreshMinutes) || 1));
     if ('lowBalanceUsd' in p) out.lowBalanceUsd = Math.max(0, +p.lowBalanceUsd || 0);
     if ('dailyBudgetUsd' in p) out.dailyBudgetUsd = Math.max(0, +p.dailyBudgetUsd || 0);
     if ('monthlyBudgetUsd' in p) out.monthlyBudgetUsd = Math.max(0, +p.monthlyBudgetUsd || 0);
-    if ('statusBarContent' in p && SBC.some(([v]) => v === p.statusBarContent)) out.statusBarContent = p.statusBarContent;
     if ('bannerColor' in p && BANNER_COLORS.some(([v]) => v === p.bannerColor)) out.bannerColor = p.bannerColor;
     if ('bannerVivid' in p) out.bannerVivid = !!p.bannerVivid;
     ['notifications', 'statusBar', 'includeByok'].forEach((k) => { if (k in p) out[k] = !!p[k]; });

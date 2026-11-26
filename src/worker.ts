@@ -1,11 +1,11 @@
 // The plugin's worker: owns the API keys, the network, the cache and the alerts. The panel only
 // asks it for finished reports (src/protocol.ts) and never sees a key.
 import type { OrcaWorkerApi } from 'orca/worker'
-import type { BannerColor, DayRow, DeepSeekView, KeyInfo, Measure, Range, Report, Settings, Status, StatusBarContent } from './protocol'
+import type { BannerColor, DayRow, DeepSeekView, KeyInfo, Measure, Range, Report, Settings, Status } from './protocol'
 import { OpenRouterError, createClient, getActivity, getCredits, getKeyActivity, getKeyMeta, listKeys } from './core/openrouter'
 import { buildReport, keyMayHaveRecentActivity, normalizeActivity, normalizeKeys, todaySpend } from './core/report'
 import { addSnapshot, mergeDays, pruneRows, type Snapshot } from './core/history'
-import { addSnapshots, burnPerDay, describeDeepSeekError, getBalance, maskKey, DeepSeekError, type DeepSeekAccount, type DeepSeekSnapshot } from './core/deepseek'
+import { addSnapshots, burnPerDay, spentSince, describeDeepSeekError, getBalance, maskKey, DeepSeekError, type DeepSeekAccount, type DeepSeekSnapshot } from './core/deepseek'
 import { reportCsv } from './core/csv'
 
 const MGMT_KEY = 'mgmtKey'
@@ -44,13 +44,11 @@ const DEFAULT_SETTINGS: Settings = {
   monthlyBudgetUsd: 0,
   notifications: true,
   statusBar: true,
-  statusBarContent: 'credits-today',
   includeByok: true,
   bannerColor: 'purple',
   bannerVivid: false,
 }
 
-const CONTENT_CHOICES: readonly StatusBarContent[] = ['credits', 'credits-today', 'credits-days']
 const BANNER_COLORS: readonly BannerColor[] = ['purple', 'gold', 'teal', 'rose', 'graphite']
 
 // Plain-English reasons for the failures a person can actually act on.
@@ -118,9 +116,6 @@ export default function activate(orca: OrcaWorkerApi): void {
       monthlyBudgetUsd: clampNumber(raw.monthlyBudgetUsd, 0, 1_000_000, DEFAULT_SETTINGS.monthlyBudgetUsd),
       notifications: bool('notifications'),
       statusBar: bool('statusBar'),
-      statusBarContent: CONTENT_CHOICES.includes(raw.statusBarContent as StatusBarContent)
-        ? (raw.statusBarContent as StatusBarContent)
-        : DEFAULT_SETTINGS.statusBarContent,
       includeByok: bool('includeByok'),
       bannerColor: BANNER_COLORS.includes(raw.bannerColor as BannerColor) ? (raw.bannerColor as BannerColor) : DEFAULT_SETTINGS.bannerColor,
       bannerVivid: bool('bannerVivid'),
@@ -162,18 +157,33 @@ export default function activate(orca: OrcaWorkerApi): void {
     const remaining = cache.credits.totalCredits - cache.credits.totalUsage
     const today = todaySpend(cache.keys, settings.includeByok)
     const low = settings.lowBalanceUsd
-    const tone = low > 0 && remaining <= low / 2 ? 'danger' : low > 0 && remaining <= low ? 'warning' : 'neutral'
-    let extra = ''
-    if (settings.statusBarContent === 'credits-today') extra = ` · ${usd(today)} today`
-    else if (settings.statusBarContent === 'credits-days') {
-      const days = (await currentReport('7d', 'cost'))?.balance.daysLeft
-      if (days != null) extra = ` · ~${Math.round(days)}d left`
+    let tone: 'neutral' | 'warning' | 'danger' = low > 0 && remaining <= low / 2 ? 'danger' : low > 0 && remaining <= low ? 'warning' : 'neutral'
+    const report = await currentReport('7d', 'cost', settings)
+    const days = report?.balance.daysLeft
+    const lines = [`OpenRouter: ${usd(remaining)} left · ${usd(today)} today${days != null ? ` · about ${Math.round(days)} day${Math.round(days) === 1 ? '' : 's'} left` : ''}`]
+    // The text is what was spent today: OpenRouter plus DeepSeek when it is in dollars.
+    let spent = today
+    const ds = await deepSeekView()
+    if (ds) {
+      if (ds.authFailed) lines.push('DeepSeek: key rejected')
+      for (const b of ds.balances) {
+        const money = b.currency === 'USD' ? usd : (n: number) => `${n.toFixed(2)} ${b.currency}`
+        const parts = [`${money(b.total)} left`]
+        if (b.spentToday != null) parts.push(`about ${money(b.spentToday)} today`)
+        if (b.daysLeft != null) parts.push(`about ${Math.round(b.daysLeft)} day${Math.round(b.daysLeft) === 1 ? '' : 's'} left`)
+        lines.push(`DeepSeek: ${parts.join(' · ')}`)
+        if (b.currency === 'USD' && b.spentToday != null) spent += b.spentToday
+        if (ds.available === false || (b.daysLeft != null && b.daysLeft <= 1)) tone = 'danger'
+        else if (b.daysLeft != null && b.daysLeft <= 3 && tone === 'neutral') tone = 'warning'
+      }
+      if (ds.authFailed && tone === 'neutral') tone = 'warning'
     }
+    lines.push('Click to show or hide the panel.')
     await orca.host.call('statusBar.update', {
       id: 'balance',
-      text: `${usd(remaining)} left${extra}`,
+      text: `${usd(spent)} today`,
       tone,
-      tooltip: 'OpenRouter credits left',
+      tooltip: lines.join('\n'),
       visible: true,
     })
   }
@@ -344,9 +354,9 @@ export default function activate(orca: OrcaWorkerApi): void {
         const label = await getKeyMeta(createClient({ key })).catch(() => null)
         if (label) await orca.storage.set(KEY_LABEL, label.label as never)
       }
+      await refreshDeepSeek()
       await updateStatusBar()
       if (outcome.ok) await checkAlerts()
-      await refreshDeepSeek()
     } catch (e) {
       orca.log(`post-refresh step failed: ${e instanceof Error ? e.message : 'error'}`)
     }
@@ -424,7 +434,8 @@ export default function activate(orca: OrcaWorkerApi): void {
       available: cache ? cache.available : null,
       balances: (cache?.balances ?? []).map((b) => {
         const burn = burnPerDay(snaps, b.currency, now)
-        return { ...b, burnPerDay: burn, daysLeft: burn && burn > 0 ? b.total / burn : null }
+        const midnight = Date.parse(new Date(now).toISOString().slice(0, 10) + 'T00:00:00Z')
+        return { ...b, burnPerDay: burn, daysLeft: burn && burn > 0 ? b.total / burn : null, spentToday: spentSince(snaps, b.currency, midnight) }
       }),
       updatedAt: cache ? cache.at : null,
       error: meta.error,
@@ -453,12 +464,14 @@ export default function activate(orca: OrcaWorkerApi): void {
     await orca.storage.set('dsSnapshots', addSnapshots([], account, now) as never)
     await orca.storage.set('dsMeta', { error: null, authFailed: false } as never)
     orca.panels.post('report.changed', { at: now })
+    detach(updateStatusBar())
     return { ok: true as const, label }
   })
 
   orca.panels.handle('deepseek.test', async () => {
     if (!(await orca.secrets.get(DS_KEY))) return { ok: false as const, error: 'No DeepSeek key saved.' }
     await refreshDeepSeek()
+    detach(updateStatusBar())
     const meta = await load<DsMeta>('dsMeta', { error: null, authFailed: false })
     return meta.error ? { ok: false as const, error: meta.error } : { ok: true as const }
   })
@@ -468,6 +481,7 @@ export default function activate(orca: OrcaWorkerApi): void {
     await orca.secrets.delete(DS_KEY)
     for (const k of DS_STORE) await orca.storage.delete(k)
     orca.panels.post('report.changed', { at: Date.now() })
+    detach(updateStatusBar())
     return { ok: true as const }
   })
 
@@ -545,7 +559,6 @@ export default function activate(orca: OrcaWorkerApi): void {
     if (patch.monthlyBudgetUsd !== undefined) next.monthlyBudgetUsd = clampNumber(patch.monthlyBudgetUsd, 0, 1_000_000, next.monthlyBudgetUsd)
     if (typeof patch.notifications === 'boolean') next.notifications = patch.notifications
     if (typeof patch.statusBar === 'boolean') next.statusBar = patch.statusBar
-    if (patch.statusBarContent !== undefined && CONTENT_CHOICES.includes(patch.statusBarContent)) next.statusBarContent = patch.statusBarContent
     if (typeof patch.includeByok === 'boolean') next.includeByok = patch.includeByok
     if (patch.bannerColor !== undefined && BANNER_COLORS.includes(patch.bannerColor)) next.bannerColor = patch.bannerColor
     if (typeof patch.bannerVivid === 'boolean') next.bannerVivid = patch.bannerVivid

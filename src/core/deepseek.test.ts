@@ -1,5 +1,5 @@
 import { test, assert } from 'orca/testing'
-import { DeepSeekError, addSnapshots, burnPerDay, getBalance, maskKey, parseBalance } from './deepseek'
+import { DeepSeekError, addSnapshots, burnPerDay, getBalance, maskKey, parseBalance, spentSince } from './deepseek'
 
 const H = 3_600_000
 const D = 24 * H
@@ -62,3 +62,16 @@ test('maskKey shows only the prefix and last four characters', () => {
   assert.equal(maskKey('sk-0123456789abcdef'), 'sk-…cdef')
   assert.equal(maskKey('short'), '••••')
 })
+
+test('spent today counts drops since midnight from the last reading before it, ignoring top-ups', () => {
+  const midnight = Date.parse('2026-11-26T00:00:00Z')
+  const snaps = [
+    { t: midnight - 2 * H, currency: 'USD', total: 10 },
+    { t: midnight + 1 * H, currency: 'USD', total: 9.5 },  // 0.5
+    { t: midnight + 2 * H, currency: 'USD', total: 20 },   // top-up
+    { t: midnight + 3 * H, currency: 'USD', total: 19.75 }, // 0.25
+  ]
+  assert.equal(spentSince(snaps, 'USD', midnight), 0.75)
+  assert.equal(spentSince(snaps.slice(0, 1), 'USD', midnight), null) // no reading today yet
+})
+

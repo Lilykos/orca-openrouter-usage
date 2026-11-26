@@ -109,7 +109,7 @@ test('saves the key, remembers its masked label, and serves a report without tot
   assert.ok(!('totalCredits' in report.balance) && !('totalUsage' in report.balance))
   assert.ok(report.daily.length > 0)
   assert.ok(report.models[0].series.length > 0)
-  assert.ok(lastBar(host).text?.includes('left'))
+  assert.ok(lastBar(host).text?.endsWith(' today'))
   // The key lives only in secrets, and the total never reaches the status bar.
   assert.ok(!JSON.stringify(host.data().storage).includes(MGMT))
   assert.ok(!JSON.stringify(worker.posts).includes(MGMT))
@@ -234,7 +234,7 @@ test('a rejected key turns the status bar red, and recovers on the next good ref
   assert.equal(lastBar(host).text, 'OpenRouter: key rejected')
   assert.equal(lastBar(host).tone, 'danger')
   await withFetch(fakeFetch(), () => worker.request('refresh'))
-  assert.ok(lastBar(host).text?.includes('left'))
+  assert.ok(lastBar(host).text?.endsWith(' today'))
 })
 
 test('banner colour and vivid default to purple and quiet, save valid choices and ignore others', async () => {
@@ -249,15 +249,14 @@ test('banner colour and vivid default to purple and quiet, save valid choices an
   assert.equal((await get()).bannerColor, 'gold')
 })
 
-test('status bar content follows the setting', async () => {
-  const credits = await connected({ statusBarContent: 'credits' })
-  assert.ok(/^\$[\d.]+ left$/.test(lastBar(credits.host).text ?? ''), lastBar(credits.host).text)
-  const today = await connected({ statusBarContent: 'credits-today' })
-  assert.ok(lastBar(today.host).text?.includes('today'))
-  const days = await connected({ statusBarContent: 'credits-days' })
-  assert.ok(/left · ~\d+d left$/.test(lastBar(days.host).text ?? ''), lastBar(days.host).text)
-  const out = (await days.worker.request('settings.set', { statusBarContent: 'nonsense' as never })) as Settings
-  assert.equal(out.statusBarContent, 'credits-days') // invalid values are ignored
+test('the status bar shows what was spent today, with each account in the tooltip', async () => {
+  const { host, worker } = await connected()
+  const report = (await worker.request('report.get', QUERY)) as Report
+  const bar = lastBar(host)
+  assert.equal(bar.text, `$${report.tiles.today.toFixed(2)} today`)
+  assert.ok(bar.tooltip?.startsWith('OpenRouter: $'), bar.tooltip)
+  assert.ok(bar.tooltip?.includes(' left · '))
+  assert.ok(!bar.tooltip?.includes('DeepSeek')) // no DeepSeek key, no DeepSeek line
 })
 
 test('BYOK daily totals reach the report, status bar and daily budget alert', async () => {
@@ -265,7 +264,7 @@ test('BYOK daily totals reach the report, status bar and daily budget alert', as
   await withFetch(fakeFetch({ byokDaily: 3 }), () => worker.request('refresh'))
   const on = (await worker.request('report.get', QUERY)) as Report
   assert.ok(on.tiles.today >= 3)
-  assert.ok(lastBar(host).text?.includes(`$${on.tiles.today.toFixed(2)} today`))
+  assert.equal(lastBar(host).text, `$${on.tiles.today.toFixed(2)} today`)
   assert.equal(host.callsOf('notifications.show').filter((n) => (n as { title: string }).title.includes('daily budget')).length, 1)
   await worker.request('settings.set', { includeByok: false })
   const off = (await worker.request('report.get', QUERY)) as Report
@@ -508,5 +507,16 @@ test('testing the DeepSeek connection re-reads the balance and reports failures'
   assert.equal(((await worker.request('deepseek.get')) as DeepSeekView).balances[0].total, 8.5)
   const bad = await withFetch(withDeepSeek({ total: '1', status: 401 }), () => worker.request('deepseek.test'))
   assert.deepEqual(bad, { ok: false, error: 'DeepSeek rejected this key. It may be mistyped or revoked.' })
+})
+
+test('a DeepSeek key adds its line to the status bar tooltip and its dollars to today', async () => {
+  const { host, worker } = await connected()
+  await withFetch(withDeepSeek({ total: '12.50' }), () => worker.request('deepseek.save', { apiKey: DS }))
+  await new Promise((r) => setTimeout(r, 20))
+  const bar = lastBar(host)
+  assert.ok(bar.tooltip?.split('\n').some((l) => l.startsWith('DeepSeek: $12.50 left')), bar.tooltip)
+  await worker.request('deepseek.clear')
+  await new Promise((r) => setTimeout(r, 20))
+  assert.ok(!lastBar(host).tooltip?.includes('DeepSeek'))
 })
 

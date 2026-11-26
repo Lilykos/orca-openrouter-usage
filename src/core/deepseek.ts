@@ -127,6 +127,21 @@ export function burnPerDay(snapshots: DeepSeekSnapshot[], currency: string, now:
   return spent / (span / DAY_MS)
 }
 
+/**
+ * What one currency's balance dropped by since `since` (e.g. UTC midnight), ignoring top-ups. The last
+ * reading before `since` is the starting point; with no reading before it, spend starts at the first one after.
+ */
+export function spentSince(snapshots: DeepSeekSnapshot[], currency: string, since: number): number | null {
+  const pts = snapshots.filter((s) => s.currency === currency).sort((a, b) => a.t - b.t)
+  const before = pts.filter((s) => s.t < since).slice(-1)
+  const after = pts.filter((s) => s.t >= since)
+  const run = [...before, ...after]
+  if (!after.length) return null
+  let spent = 0
+  for (let i = 1; i < run.length; i++) spent += Math.max(0, run[i - 1].total - run[i].total)
+  return spent
+}
+
 /** Masks a key for display: its prefix and last four characters only. */
 export function maskKey(key: string): string {
   const k = key.trim()

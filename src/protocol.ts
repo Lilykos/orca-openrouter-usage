@@ -154,6 +154,8 @@ export interface DeepSeekView {
     /** Mean daily spend from balance snapshots over the last 7 days; null with under 12 hours of history. */
     burnPerDay: number | null
     daysLeft: number | null
+    /** How much the balance dropped since UTC midnight, ignoring top-ups; null before today's first reading. */
+    spentToday: number | null
   }[]
   /** When the balance was last read, ms epoch. */
   updatedAt: number | null
@@ -173,7 +175,6 @@ export interface Status {
   lastError: string | null
 }
 
-export type StatusBarContent = 'credits' | 'credits-today' | 'credits-days'
 export type BannerColor = 'purple' | 'gold' | 'teal' | 'rose' | 'graphite'
 
 /** Options the person can change in the panel's settings view. Mirrors the manifest's `contributes.settings`. */
@@ -189,8 +190,6 @@ export interface Settings {
   notifications: boolean
   /** Show the credits-left item in Orca's status bar. */
   statusBar: boolean
-  /** What the status bar item says after the credits: nothing, today's spend, or the days left. */
-  statusBarContent: StatusBarContent
   /** Count BYOK (bring your own key) usage in spend figures. */
   includeByok: boolean
   /** The credits banner's colour. */

@@ -84,8 +84,8 @@ const views = [
   ['open sections', 'dark,open', ['prompt to output', 'Cached prompt', 'Click a day to select it']],
   ['7-day range', 'dark', ['last 7 days'], { range: '7d' }],
   ['many models', 'dark,many', ['13 used', 'extra-model-7']],
-  ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'inactive keys']],
-  ['key health', 'dark,tab=keys', ['Expires', 'Near limit', 'resets monthly']],
+  ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'Inactive keys', '2 keys']],
+  ['key health', 'dark,tab=keys', ['Expires', 'Near limit', 'monthly limit']],
   ['key warnings under the banner', 'dark', ['expires', 'has used 94% of its']],
   ['settings', 'dark,tab=settings', ['Account', 'Appearance', 'Colour', 'Vivid', 'Alerts and budgets', 'Low balance', 'Status bar', 'Next to credits', 'Data', 'Refresh every', 'Count BYOK usage', 'Days follow UTC']],
   ['vivid gold banner', 'dark,banner=gold,vivid', ['Credits left']],
@@ -270,7 +270,7 @@ try {
   report(drive('dark,tab=keys', `
     localStorage.clear();
     await click('[data-act="krange"][data-val="30d"]');
-    const total = () => ($('.klist') ? $('.klist').parentNode.querySelector('.fine').innerText : '');
+    const total = () => $('#h-keys').closest('section').querySelector('.readout .v').innerText;
     const t30 = total();
     await click('[data-act="krange"][data-val="7d"]');
     check('Keys has its own range switch', /last 7 days/.test($('#h-keys').innerText) && total() !== t30);
@@ -283,8 +283,14 @@ try {
     await click('[data-act="tab"][data-val="usage"]');
     check('and Usage keeps its own range', $('[data-act="range"][data-val="30d"]').getAttribute('aria-checked') === 'true');
     await click('[data-act="tab"][data-val="keys"]');
-    await click('[data-act="inactive"]');
-    check('inactive keys expand', /Disabled/.test(txt()));
+    await click('[data-act="key"]');
+    const d = $('.mdetail');
+    check('clicking a key opens its details inline', !!d && /All time/.test(d.innerText) && /This month/.test(d.innerText) && /Last used/.test(d.innerText));
+    await click('[data-act="key"][aria-expanded="true"]');
+    check('clicking it again closes them', !$('.mdetail'));
+    check('inactive keys start folded away', $('[data-act="toggle"][data-val="inactive"]').getAttribute('aria-expanded') === 'false' && !$('#b-inactive'));
+    await click('[data-act="toggle"][data-val="inactive"]');
+    check('the arrow shows inactive keys', /Disabled/.test($('#b-inactive').innerText) && /Expired/.test($('#b-inactive').innerText));
   `))
   report(drive('dark,many', `
     localStorage.clear();

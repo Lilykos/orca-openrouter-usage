@@ -225,6 +225,13 @@ button.mrow:hover { background: var(--hover); }
 .mrow[aria-expanded="true"] .bar i { background: var(--bar); }
 .mrow[aria-expanded="true"] .n { font-weight: 600; }
 .mrow.more .n { color: var(--fg-2); }
+.krow2 { grid-template-columns: minmax(0, 1fr) auto 38px; }
+.krow2 .n { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.krow2 .kn { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; font-weight: 500; }
+.krow2 .kmeta { grid-column: 1 / -1; font-size: 12px; color: var(--muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.krow2 .lim.warn { color: var(--warn); }
+.kd-meter { height: 4px; margin-bottom: 4px; }
+.kd-reset { margin-bottom: 8px; }
 .mdetail { padding: 8px 0 12px; border-bottom: 1px solid var(--hair); margin-bottom: 4px; }
 .kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; }
 .kv div { min-width: 0; }
@@ -250,21 +257,10 @@ button.mrow:hover { background: var(--hover); }
 .scale i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
 
 /* keys */
-.klist { list-style: none; margin: 0; padding: 0; }
-.krow { padding: 10px 0; border-top: 1px solid var(--hair); }
-.krow:first-child { border-top: 0; padding-top: 4px; }
-.k1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.k1 .n { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.k1 .v { margin-left: auto; font-weight: 500; font-variant-numeric: tabular-nums; }
-.k2 { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
 .badge { font-size: 11px; font-weight: 500; padding: 0 6px; border-radius: 4px; line-height: 18px; white-space: nowrap; flex: none; }
 .badge.warn { color: var(--warn); background: var(--warn-bg); }
 .badge.danger { color: var(--danger); background: var(--danger-bg); }
 .badge.neutral { color: var(--fg-2); background: var(--neutral-bg); }
-.kmeter { margin-top: 7px; }
-.kmeter .meter { height: 4px; }
-.inactive { width: 100%; border: 0; border-top: 1px solid var(--hair); background: transparent; text-align: left; padding: 10px 0 2px; color: var(--fg-2); font-size: 12.5px; cursor: pointer; display: flex; justify-content: space-between; }
-.inactive .n { color: var(--fg-2); }
 
 /* settings */
 .conn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 0 10px; }
@@ -391,9 +387,9 @@ const state = {
   pin: null,               // pinned date range: { from, to }
   pendingPin: null,        // a heatmap day to pin once the wider range has loaded
   model: null,             // model selected in the list (range mode)
-  inactiveOpen: false,
+  keyOpen: null,           // key hash whose details are open
   heatFocus: null,
-  open: { mix: false, heat: false }   // collapsible Usage sections; closed until opened, then remembered
+  open: { mix: false, heat: false, inactive: false }   // collapsible Usage sections; closed until opened, then remembered
 };
 
 let reqSeq = 0;
@@ -476,7 +472,7 @@ function loadPrefs() {
     if (RANGES.some(([v]) => v === p.keysRange)) state.keysRange = p.keysRange;
     if (MEASURES.some(([v]) => v === p.measure)) state.measure = p.measure;
     if (TABS.some(([id]) => id === p.tab)) state.tab = p.tab;
-    if (p.open && typeof p.open === 'object') state.open = { mix: p.open.mix === true, heat: p.open.heat === true };
+    if (p.open && typeof p.open === 'object') state.open = { mix: p.open.mix === true, heat: p.open.heat === true, inactive: p.open.inactive === true };
   } catch (e) { /* storage unavailable: defaults */ }
   try {
     const d = JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]');
@@ -938,6 +934,7 @@ function keysHtml(rep) {
   const active = all.filter((k) => !isInactive(k)).sort((a, b) => (keySpend(b, r) ?? -1) - (keySpend(a, r) ?? -1));
   const inactive = all.filter(isInactive);
   const total = active.reduce((s, k) => s + (keySpend(k, r) || 0), 0);
+  const scope = r === 'all' ? 'all time' : 'last ' + RANGE_DAYS[r] + ' days';
   const seg = `<div class="seg sm" role="radiogroup" aria-label="Key spend range">${RANGES.map(([v, l]) => `<button type="button" role="radio" aria-checked="${r === v}" tabindex="${r === v ? 0 : -1}" data-act="krange" data-val="${v}" data-fk="krange:${v}">${l}</button>`).join('')}</div>`;
   const badges = (k) => {
     const h = k.health || {};
@@ -949,23 +946,50 @@ function keysHtml(rep) {
     else if (h.limit === 'near') b.push(['warn', 'Near limit']);
     return b.map(([t, l]) => `<span class="badge ${t}">${esc(l)}</span>`).join('');
   };
-  const row = (k, quiet) => {
-    const s = keySpend(k, r);
+  const limitLine = (k) => {
+    if (k.limit == null) return '';
     const h = k.health || {};
-    const used = h.usedFraction;
-    const meta = [k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used', k.name && k.label ? k.label : ''].filter(Boolean).join(' · ');
-    const limit = k.limit != null && !quiet ? `<div class="kmeter"><div class="meter" role="meter" aria-label="${esc(keyName(k))} limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((used || 0) * 100)}"><i class="now${h.limit ? ' warn' : ''}" style="width:${((used || 0) * 100).toFixed(1)}%"></i></div>
-      <div class="k2"><span>${pct(used || 0)} of ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit</span><span>${k.limitRemaining != null ? esc(money(Math.max(0, k.limitRemaining))) + ' left' : ''}${k.limitReset ? ' · resets ' + RESET[k.limitReset] : ''}</span></div></div>` : '';
-    return `<li class="krow"><div class="k1"><span class="n"${quiet ? ' style="color:var(--fg-2)"' : ''} title="${esc(keyName(k))}">${esc(keyName(k))}</span>${badges(k)}<span class="v"${s == null ? ' title="Still loading this key\'s activity"' : ''}>${s == null ? '—' : esc(money(s))}</span></div><div class="k2"><span>${esc(meta)}</span></div>${limit}</li>`;
+    return `<span class="${h.limit ? 'lim warn' : 'lim'}">${pct(h.usedFraction || 0)} of ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit</span>`;
   };
-  const scope = r === 'all' ? 'all time' : 'last ' + RANGE_DAYS[r] + ' days';
-  return `<section aria-labelledby="h-keys">
-    <div class="sec-h"><h2 id="h-keys">API keys <span class="scope">· ${scope}</span></h2><div class="ctl">${seg}</div></div>
-    ${active.length || inactive.length ? '' : '<p class="note-row">No API keys on this account yet.</p>'}
-    ${active.length ? `<ul class="klist">${active.map((k) => row(k, false)).join('')}</ul><p class="fine" style="margin-top:6px">${active.length} active key${active.length === 1 ? '' : 's'} · ${esc(money(total))} in total</p>` : ''}
-    ${inactive.length ? `<button type="button" class="inactive" data-act="inactive" data-fk="inactive" aria-expanded="${state.inactiveOpen}"><span>${inactive.length} inactive key${inactive.length === 1 ? '' : 's'}</span><span class="muted">${state.inactiveOpen ? 'Hide' : 'Show'}</span></button>
-      ${state.inactiveOpen ? `<ul class="klist">${inactive.map((k) => row(k, true)).join('')}</ul>` : ''}` : ''}
-  </section>`;
+  const detail = (k) => {
+    const h = k.health || {};
+    const inc = state.settings ? state.settings.includeByok : true;
+    const with_ = (v, b) => v + (inc ? b || 0 : 0);
+    const cells = [
+      ['Today', money(with_(k.usageDaily, k.byokUsageDaily))],
+      ['This week', money(with_(k.usageWeekly, k.byokUsageWeekly))],
+      ['This month', money(with_(k.usageMonthly, k.byokUsageMonthly))],
+      ['All time', money(with_(k.usage, k.byokUsage))],
+      ['Limit', k.limit == null ? 'None' : money(k.limit) + (k.limitReset ? ' ' + RESET[k.limitReset] : '')],
+      ['Left', k.limit == null ? '—' : money(Math.max(0, k.limitRemaining != null ? k.limitRemaining : k.limit * (1 - (h.usedFraction || 0))))],
+      ['Last used', k.lastUsedAt ? relTime(k.lastUsedAt) : 'Never'],
+      ['Expires', k.expiresAt ? dShort(k.expiresAt.slice(0, 10)) : 'Never'],
+      ['Key', k.label || '—']
+    ];
+    const meter = k.limit != null ? `<div class="meter kd-meter" role="meter" aria-label="${esc(keyName(k))} limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((h.usedFraction || 0) * 100)}"><i class="now${h.limit ? ' warn' : ''}" style="width:${((h.usedFraction || 0) * 100).toFixed(1)}%"></i></div>${k.limitReset ? `<p class="fine kd-reset">Resets ${RESET[k.limitReset]} (UTC)</p>` : ''}` : '';
+    return `<div class="mdetail">${meter}<div class="kv">${cells.map(([a, v]) => `<div><div class="k">${a}</div><div class="v" title="${esc(v)}">${esc(v)}</div></div>`).join('')}</div></div>`;
+  };
+  const row = (k, quiet) => {
+    const v = keySpend(k, r);
+    const open = state.keyOpen === k.hash;
+    const share = total > 0 && v ? v / total : 0;
+    const meta = [k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used'].join('');
+    return `<li><button type="button" class="mrow krow2" aria-expanded="${open}" data-act="key" data-val="${esc(k.hash)}" data-fk="key:${esc(k.hash)}" title="${esc(keyName(k))}">
+      <span class="n"><span class="kn">${esc(keyName(k))}</span>${badges(k)}</span><span class="val"${v == null ? ' title="Still loading this key\'s activity"' : ''}>${v == null ? '—' : esc(money(v))}</span><span class="pct">${quiet ? '' : pct(share)}</span>
+      <span class="kmeta">${esc(meta)}${k.limit != null ? ' · ' : ''}${limitLine(k)}</span>
+      ${quiet ? '' : `<span class="bar" aria-hidden="true"><i style="width:${Math.max(1, share * 100).toFixed(1)}%"></i></span>`}</button>${open ? detail(k) : ''}</li>`;
+  };
+  let h = `<section class="ucard" aria-labelledby="h-keys">
+    <div class="sec-h"><h2 id="h-keys">API keys <span class="scope">· ${scope}</span></h2><div class="ctl">${seg}</div></div>`;
+  if (!active.length && !inactive.length) return h + '<p class="note-row">No API keys on this account yet.</p></section>';
+  h += `<div class="readout"><span class="v">${esc(money(total))}</span><span class="m">${active.length} active key${active.length === 1 ? '' : 's'}</span></div>`;
+  h += active.length ? `<ul class="mlist">${active.map((k) => row(k, false)).join('')}</ul>` : '<p class="note-row">No active keys.</p>';
+  h += '</section>';
+  if (inactive.length) {
+    h += `<section class="ucard" aria-labelledby="h-inactive">${collHead('inactive', 'h-inactive', 'Inactive keys', '', `${inactive.length} key${inactive.length === 1 ? '' : 's'}`)}
+      ${state.open.inactive ? `<ul class="mlist" id="b-inactive">${inactive.map((k) => row(k, true)).join('')}</ul>` : ''}</section>`;
+  }
+  return h;
 }
 
 /* ---------- rendering: settings ---------- */
@@ -1326,7 +1350,7 @@ app.addEventListener('click', (e) => {
     case 'model': state.model = state.model === v ? null : v; render(); break;
     case 'unpin': state.pin = null; state.hover = null; render(); break;
     case 'toggle': state.open = { ...state.open, [v]: !state.open[v] }; savePrefs(); render(); break;
-    case 'inactive': state.inactiveOpen = !state.inactiveOpen; render(); break;
+    case 'key': state.keyOpen = state.keyOpen === v ? null : v; render(); break;
     case 'menu': state.menu = !state.menu; render(); if (state.menu) focusFk('export:daily'); break;
     case 'export': exportCsv(v); break;
     case 'refresh': doRefresh(); break;
@@ -1678,7 +1702,7 @@ if (!window.orca || !window.orca.plugin) {
   window.orca = makeMock();
   // Preview states for screenshots: #pin=<days ago>, #model (select the top model), #scroll=<element id>, #open (open the collapsed sections).
   const h = location.hash;
-  if (/(?:^#|,)open(?:,|$)/.test(h)) state.open = { mix: true, heat: true };
+  if (/(?:^#|,)open(?:,|$)/.test(h)) state.open = { mix: true, heat: true, inactive: true };
   const pinAgo = (h.match(/(?:^#|,)pin=(\d+)/) || [])[1];
   const scrollTo = (h.match(/(?:^#|,)scroll=([a-z-]+)/) || [])[1];
   if (pinAgo || /(?:^#|,)model(?:,|$)/.test(h) || scrollTo) devHook = () => {
@@ -1693,7 +1717,7 @@ if (!window.orca || !window.orca.plugin) {
 
 const previewOpen = state.open.mix && state.open.heat;
 loadPrefs();
-if (previewOpen) state.open = { mix: true, heat: true };
+if (previewOpen) state.open = { mix: true, heat: true, inactive: true };
 // #tab=keys selects a tab for this load only; it is not written to prefs.
 const hashTab = (location.hash.match(/(?:^#|,)tab=([a-z]+)/) || [])[1];
 if (TABS.some(([id]) => id === hashTab)) state.tab = hashTab;

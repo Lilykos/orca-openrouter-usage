@@ -5,7 +5,7 @@
 A redesign: one answer first, detail on demand.
 
 - Three tabs instead of five: **Usage**, **Keys** and **Settings**. The Ledger and the separate Models tab are folded into Usage.
-- The banner stays, quieter: credits left, how long they last at your recent rate, and an **Add credits** button. It turns amber when credits run short.
+- The banner stays, quieter: credits left, how long they last at your recent rate, and an **Add credits** button.
 - Warnings sit under the banner, each with an × to close it: credits running out, keys near or at their limit, keys expiring or expired, and a monthly budget being passed. A closed warning comes back only when something changes, such as a new day or a new month.
 - **Usage** leads with Today and this month (with budget progress), then a one-colour daily chart with your 7-day burn drawn over the days it averages. Hover a bar to preview a day, or click it to select it: the Models list and Token mix switch to that day, with every model listed.
 - Click a model to open its details inline (requests, cost per request, change against the previous period, tokens, cache hit, cost per 1M tokens) and see its share in every bar.
@@ -13,9 +13,9 @@ A redesign: one answer first, detail on demand.
 - The **activity heatmap** covers 26 weeks, follows Cost or Tokens, and selects a day when you click it, widening the range when needed.
 - **Keys** has its own 7D, 30D and All switch, shows badges only when a key needs attention, and folds inactive keys away.
 - Settings keep the same options in a calmer layout. CSV export moved to the ⋯ menu.
-- New **Banner style** setting: the quiet gradient (default), the original vivid purple, or plain. Pick it from small previews in Settings or in Orca's plugin settings.
+- Choose the banner's **colour** (purple, gold, teal, rose or graphite) and switch **Vivid** on for a bold version, with a live preview in Settings. Both are regular plugin settings, so they also appear in Orca's settings. When credits run short, the banner keeps your colour and shows a warning icon; the warnings below it carry the details.
 - Follows Orca's light and dark themes for the charts and accents as well as the surfaces.
-- No new permissions. Orca may ask you to review the new Banner style setting when you update.
+- No new permissions. Orca may ask you to review the new banner settings when you update.
 
 ## 1.2.0
 

@@ -86,9 +86,9 @@ const views = [
   ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'inactive keys']],
   ['key health', 'dark,tab=keys', ['Expires', 'Near limit', 'resets monthly']],
   ['key warnings under the banner', 'dark', ['expires', 'has used 94% of its']],
-  ['settings', 'dark,tab=settings', ['Connection', 'Refresh every', 'Next to credits', 'Banner style', 'Quiet', 'Vivid', 'Plain', 'Count BYOK usage', 'Days follow UTC']],
-  ['vivid banner', 'dark,banner=vivid', ['Credits left']],
-  ['plain banner', 'light,low,banner=plain', ['Credits left', 'days left']],
+  ['settings', 'dark,tab=settings', ['Connection', 'Refresh every', 'Next to credits', 'Banner', 'Colour', 'Vivid', 'Count BYOK usage', 'Days follow UTC']],
+  ['vivid gold banner', 'dark,banner=gold,vivid', ['Credits left']],
+  ['quiet graphite banner, low credits', 'light,low,banner=graphite', ['Credits left', 'days left']],
   ['setup (not connected)', 'dark,setup', ['management key']],
   ['empty range', 'dark,empty', ['No models in this range', 'No tokens in this range']],
   ['stale data', 'dark,stale', ['cached data']],
@@ -314,16 +314,20 @@ try {
     check('the panel follows Orca font preferences', getComputedStyle(document.body).fontFamily.includes('monospace'));
   `))
   report(drive('dark,tab=settings', `
-    const style = () => $('.banner[aria-label="Credits"]').className;
-    check('the banner starts quiet', /\\bquiet\\b/.test(style()));
-    await click('[data-act="banner-style"][data-val="vivid"]'); await wait(700);
-    check('picking Vivid restyles the banner', /\\bvivid\\b/.test(style()) && $('[data-act="banner-style"][data-val="vivid"]').getAttribute('aria-checked') === 'true');
+    const top = () => $('.banner[aria-label="Credits"]').className;
+    const preview = () => document.querySelectorAll('.bn-preview');
+    check('Settings shows exactly one banner preview', preview().length === 1 && preview()[0].getAttribute('aria-hidden') === 'true' && !preview()[0].querySelector('[data-fk]'));
+    check('the banner starts purple and quiet', /\\bc-purple\\b/.test(top()) && !/\\bvivid\\b/.test(top()));
+    const colour = $('[data-set="bannerColor"]');
+    colour.value = 'gold'; colour.dispatchEvent(new Event('change', { bubbles: true })); await wait(150);
+    check('picking a colour restyles the banner and its preview at once', /\\bc-gold\\b/.test(top()) && /\\bc-gold\\b/.test(preview()[0].className));
+    $('[data-set="bannerVivid"]').click(); await wait(150);
+    check('the Vivid switch makes both vivid', /\\bvivid\\b/.test(top()) && /\\bvivid\\b/.test(preview()[0].className));
+    await wait(700);
     window.orca.emit('report.changed', { at: Date.now() }); await wait(900);
-    check('the banner style is saved, not just shown', /\\bvivid\\b/.test(style()));
-    $('[data-act="banner-style"][data-val="vivid"]').focus();
-    $('[data-act="banner-style"][data-val="vivid"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })); await wait(700);
-    check('arrow keys move through the banner styles', /\\bplain\\b/.test(style()));
-    await click('[data-act="banner-style"][data-val="quiet"]'); await wait(700);
+    check('the banner choice is saved, not just shown', /\\bc-gold\\b/.test(top()) && /\\bvivid\\b/.test(top()));
+    const c2 = $('[data-set="bannerColor"]'); c2.value = 'purple'; c2.dispatchEvent(new Event('change', { bubbles: true })); await wait(700);
+    $('[data-set="bannerVivid"]').click(); await wait(700);
     const budget = $('[data-set="monthlyBudgetUsd"]');
     check('Settings has an optional monthly budget', !!budget && +budget.value === 0);
     if (budget) {

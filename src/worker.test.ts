@@ -237,12 +237,16 @@ test('a rejected key turns the status bar red, and recovers on the next good ref
   assert.ok(lastBar(host).text?.includes('left'))
 })
 
-test('banner style defaults to quiet, saves valid choices and ignores others', async () => {
+test('banner colour and vivid default to purple and quiet, save valid choices and ignore others', async () => {
   const { worker } = await connected({})
-  assert.equal(((await worker.request('settings.get')) as Settings).bannerStyle, 'quiet')
-  assert.equal(((await worker.request('settings.set', { bannerStyle: 'vivid' })) as Settings).bannerStyle, 'vivid')
-  assert.equal(((await worker.request('settings.set', { bannerStyle: 'neon' as never })) as Settings).bannerStyle, 'vivid')
-  assert.equal(((await worker.request('settings.get')) as Settings).bannerStyle, 'vivid')
+  const get = async () => (await worker.request('settings.get')) as Settings
+  assert.equal((await get()).bannerColor, 'purple')
+  assert.equal((await get()).bannerVivid, false)
+  const out = (await worker.request('settings.set', { bannerColor: 'gold', bannerVivid: true })) as Settings
+  assert.equal(out.bannerColor, 'gold')
+  assert.equal(out.bannerVivid, true)
+  assert.equal(((await worker.request('settings.set', { bannerColor: 'neon' as never })) as Settings).bannerColor, 'gold')
+  assert.equal((await get()).bannerColor, 'gold')
 })
 
 test('status bar content follows the setting', async () => {

@@ -136,21 +136,32 @@
         "default": true
       },
       {
-        "key": "bannerStyle",
-        "title": "Banner style",
-        "description": "How the credits banner at the top of the panel looks.",
+        "key": "bannerColor",
+        "title": "Banner colour",
+        "description": "The colour of the credits banner at the top of the panel.",
         "type": "string",
-        "default": "quiet",
+        "default": "purple",
         "enum": [
-          "quiet",
-          "vivid",
-          "plain"
+          "purple",
+          "gold",
+          "teal",
+          "rose",
+          "graphite"
         ],
         "enumLabels": [
-          "Quiet gradient",
-          "Vivid purple",
-          "Plain"
+          "Purple",
+          "Gold",
+          "Teal",
+          "Rose",
+          "Graphite"
         ]
+      },
+      {
+        "key": "bannerVivid",
+        "title": "Vivid banner",
+        "description": "A bold, saturated banner instead of the quiet gradient.",
+        "type": "boolean",
+        "default": false
       }
     ],
     "statusBarItems": [

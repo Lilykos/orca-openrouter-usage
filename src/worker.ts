@@ -183,7 +183,8 @@ export default function activate(orca: OrcaWorkerApi): void {
       id: 'balance',
       text: `${usd(spent)} today`,
       tone,
-      tooltip: lines.join('\n'),
+      // Orca shows tooltips on one line, so the accounts are separated rather than stacked.
+      tooltip: lines.join(' | '),
       visible: true,
     })
   }

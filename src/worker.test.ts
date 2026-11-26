@@ -256,7 +256,8 @@ test('the status bar shows what was spent today, with each account in the toolti
   assert.equal(bar.text, `$${report.tiles.today.toFixed(2)} today`)
   assert.ok(bar.tooltip?.startsWith('OpenRouter: $'), bar.tooltip)
   assert.ok(bar.tooltip?.includes(' left · '))
-  assert.ok(!bar.tooltip?.includes('DeepSeek')) // no DeepSeek key, no DeepSeek line
+  assert.ok(!bar.tooltip?.includes('DeepSeek')) // no DeepSeek key, no DeepSeek part
+  assert.ok(!bar.tooltip?.includes('\n')) // one line: Orca's tooltips do not break lines
 })
 
 test('BYOK daily totals reach the report, status bar and daily budget alert', async () => {
@@ -514,7 +515,7 @@ test('a DeepSeek key adds its line to the status bar tooltip and its dollars to 
   await withFetch(withDeepSeek({ total: '12.50' }), () => worker.request('deepseek.save', { apiKey: DS }))
   await new Promise((r) => setTimeout(r, 20))
   const bar = lastBar(host)
-  assert.ok(bar.tooltip?.split('\n').some((l) => l.startsWith('DeepSeek: $12.50 left')), bar.tooltip)
+  assert.ok(bar.tooltip?.split(' | ').some((l) => l.startsWith('DeepSeek: $12.50 left')), bar.tooltip)
   await worker.request('deepseek.clear')
   await new Promise((r) => setTimeout(r, 20))
   assert.ok(!lastBar(host).tooltip?.includes('DeepSeek'))

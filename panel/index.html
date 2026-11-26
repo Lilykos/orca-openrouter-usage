@@ -55,6 +55,9 @@ html.light {
 
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg); }
+/* The page scrolls without a scrollbar: one appearing and disappearing would shift the whole layout. */
+html, body { scrollbar-width: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; width: 0; height: 0; }
 body { font: 13px/1.45 var(--orca-font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); -webkit-font-smoothing: antialiased; }
 button, input, select { font: inherit; color: inherit; }
 p { margin: 0; }
@@ -123,7 +126,6 @@ html.light .banner.c-graphite { --bn-bg: radial-gradient(90% 120% at 100% 0%, rg
 .banner.c-graphite.vivid, html.light .banner.c-graphite.vivid { --bn-bg: radial-gradient(120% 140% at 85% 20%, rgba(148,163,184,.55) 0%, rgba(148,163,184,0) 55%), linear-gradient(120deg, #0b0c0e 0%, #1f2329 45%, #475569 100%); }
 .banner.vivid, html.light .banner.vivid { --bn-fg: #ffffff; --bn-fg-2: rgba(255,255,255,.8); --bn-motif: #ffffff; --bn-btn: rgba(255,255,255,.14); --bn-line: rgba(255,255,255,.18); }
 .banner.vivid .bn-motif { width: min(62%, 300px); -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%); mask-image: linear-gradient(90deg, transparent 0%, #000 30%); }
-.bn-preview { margin: 4px 0 10px; pointer-events: none; }
 
 /* ---------- warnings ---------- */
 .warns { display: flex; flex-direction: column; gap: 6px; margin-top: -8px; }
@@ -191,7 +193,10 @@ h2 .scope { font-weight: 400; color: var(--muted); }
 .chart .ref-l { font-size: 10px; fill: var(--fg-2); font-weight: 600; }
 
 /* models */
-.mlist { list-style: none; margin: 4px 0 0; padding: 0; }
+.mbox { height: 262px; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; padding: 0 6px; margin-left: -6px; margin-right: -6px; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.mbox::-webkit-scrollbar { width: 6px; }
+.mbox::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.mlist { list-style: none; margin: 0; padding: 0; }
 .mrow { display: grid; grid-template-columns: minmax(0, 1fr) auto 38px; column-gap: 10px; align-items: center; padding: 6px 6px 7px; margin: 0 -6px; width: calc(100% + 12px); border: 0; background: transparent; border-radius: 6px; text-align: left; font-size: 13px; }
 button.mrow { cursor: pointer; }
 button.mrow:hover { background: var(--hover); }
@@ -274,6 +279,19 @@ button.mrow:hover { background: var(--hover); }
 .switch:checked { background: var(--accent); }
 .switch:checked::after { left: 16px; }
 .saved { font-size: 12px; color: var(--ok); }
+.set-saved { margin: -10px 0 -8px; text-align: right; }
+.sgroup { display: flex; flex-direction: column; gap: 6px; }
+.sg-h h2 { font-size: 13px; }
+.sg-h p { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.sg-card { border: 1px solid var(--border); border-radius: 10px; padding: 2px 12px; }
+.sg-card > .srow:first-child, .sg-card .look-ctl > .srow:first-child { border-top: 0; }
+.sg-card .conn { padding-top: 10px; }
+.look { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; }
+.look-ctl .srow { grid-template-columns: minmax(0, 1fr) auto; }
+.look-prev { padding: 8px 0; min-width: 0; }
+/* The preview is the real banner at half size. */
+.bn-preview { zoom: .5; margin: 0; pointer-events: none; }
+@media (max-width: 330px) { .look { grid-template-columns: minmax(0, 1fr); } .look-prev { padding-top: 0; } }
 .fine { font-size: 12px; color: var(--muted); }
 .fine + .fine { margin-top: 6px; }
 
@@ -309,7 +327,6 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const SBC = [['credits', 'Nothing else'], ['credits-today', "Today's spend"], ['credits-days', 'Days left']];
-const TOP_MODELS = 6;
 const HEAT_DAYS = 182;
 const WEEKLY_AFTER = 92;   // the All range draws weekly bars once it holds more days than this
 
@@ -357,7 +374,6 @@ const state = {
   pin: null,               // pinned date range: { from, to }
   pendingPin: null,        // a heatmap day to pin once the wider range has loaded
   model: null,             // model selected in the list (range mode)
-  modelsAll: false,
   inactiveOpen: false,
   heatFocus: null
 };
@@ -549,8 +565,9 @@ function aggregate(rep, r) {
 }
 const focusRange = () => state.pin || state.hover;
 const rangeLabel = (r) => (r.from === r.to ? dLong(r.from) : 'Week of ' + dShort(r.from));
+// Models and Token mix follow a selected (clicked) day only; hovering changes just the readout.
 const scopeLabel = (rep) => {
-  const f = focusRange();
+  const f = state.pin;
   if (f) return f.from === f.to ? dShort(f.from) : 'week of ' + dShort(f.from);
   return rep.range === 'all' ? 'all time' : 'last ' + RANGE_DAYS[rep.range] + ' days';
 };
@@ -657,25 +674,22 @@ function readoutHtml(rep) {
 }
 
 function modelsHtml(rep) {
-  const f = focusRange();
+  const f = state.pin;
   const head = (side) => `<div class="sec-h"><h2 id="h-models">Models <span class="scope">· ${esc(scopeLabel(rep))}</span></h2><span class="side">${side}</span></div>`;
   if (f) {
     const a = aggregate(rep, f);
-    if (a.todayOnly) return head('') + `<p class="note-row">OpenRouter reports a UTC day's per-model split after the day ends. Today's ${esc(money(rep.tiles.today))} so far comes from your key totals.</p>`;
+    if (a.todayOnly) return head('') + `<div class="mbox"><p class="note-row">OpenRouter reports a UTC day's per-model split after the day ends. Today's ${esc(money(rep.tiles.today))} so far comes from your key totals.</p></div>`;
     const ranked = Object.entries(a.byModel).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]);
     const total = ranked.reduce((s, [, v]) => s + v, 0);
     const rows = ranked.map(([id, v]) => {
       const [vd, nm] = splitName(id);
       return `<li><div class="mrow" title="${esc(id)}"><span class="n"><span class="vd">${esc(vd)}</span>${esc(nm)}</span><span class="val">${esc(fmtV(v))}</span><span class="pct">${pct(total ? v / total : 0)}</span><span class="bar" aria-hidden="true"><i style="width:${Math.max(1, total ? (v / total) * 100 : 0).toFixed(1)}%"></i></span></div></li>`;
     }).join('');
-    return head(`${ranked.length} used`) + `<ul class="mlist">${rows || '<li class="note-row">No usage on this day.</li>'}</ul>`;
+    return head(`${ranked.length} used`) + `<div class="mbox"><ul class="mlist">${rows || '<li class="note-row">No usage on this day.</li>'}</ul></div>`;
   }
   const list = rep.models.slice().sort((x, y) => modelVal(y) - modelVal(x));
   const total = list.reduce((s, m) => s + modelVal(m), 0);
-  const top = list.length === TOP_MODELS + 1 ? TOP_MODELS + 1 : TOP_MODELS;
-  const shown = state.modelsAll ? list : list.slice(0, top);
-  const rest = list.slice(top);
-  const rows = shown.map((m) => {
+  const rows = list.map((m) => {
     const [vd, nm] = splitName(m.name);
     const v = modelVal(m);
     const open = state.model === m.name;
@@ -683,14 +697,7 @@ function modelsHtml(rep) {
       <span class="n"><span class="vd">${esc(vd)}</span>${esc(nm)}</span><span class="val">${esc(fmtV(v))}</span><span class="pct">${pct(total ? v / total : 0)}</span>
       <span class="bar" aria-hidden="true"><i style="width:${Math.max(1, total ? (v / total) * 100 : 0).toFixed(1)}%"></i></span></button>${open ? modelDetailHtml(rep, m) : ''}</li>`;
   }).join('');
-  let more = '';
-  if (rest.length && !state.modelsAll) {
-    const rv = rest.reduce((s, m) => s + modelVal(m), 0);
-    more = `<li><button type="button" class="mrow more" data-act="models-more" data-fk="models-more" aria-expanded="false"><span class="n">${rest.length} more model${rest.length === 1 ? '' : 's'}</span><span class="val">${esc(fmtV(rv))}</span><span class="pct">${pct(total ? rv / total : 0)}</span></button></li>`;
-  } else if (state.modelsAll && list.length > top) {
-    more = `<li><button type="button" class="mrow more" data-act="models-more" data-fk="models-more" aria-expanded="true"><span class="n">Show the top ${top} only</span><span></span><span></span></button></li>`;
-  }
-  return head(`${list.length} used`) + `<ul class="mlist">${rows || '<li class="note-row">No models in this range.</li>'}${more}</ul>`;
+  return head(`${list.length} used`) + `<div class="mbox" tabindex="-1"><ul class="mlist">${rows || '<li class="note-row">No models in this range.</li>'}</ul></div>`;
 }
 
 function modelDetailHtml(rep, m) {
@@ -709,7 +716,7 @@ function modelDetailHtml(rep, m) {
 }
 
 function mixHtml(rep) {
-  const f = focusRange();
+  const f = state.pin;
   const head = (side) => `<div class="sec-h"><h2 id="h-mix">Token mix <span class="scope">· ${esc(scopeLabel(rep))}</span></h2><span class="side">${side}</span></div>`;
   let x = rep.mix;
   if (f) {
@@ -861,10 +868,8 @@ function heatReadout(date) {
 function updateFocus() {
   const rep = state.report;
   if (!rep || state.tab !== 'usage') return;
-  const ro = $('#u-readout'), mo = $('#u-models'), mx = $('#u-mix');
+  const ro = $('#u-readout');
   if (ro) ro.innerHTML = readoutHtml(rep);
-  if (mo) mo.innerHTML = modelsHtml(rep);
-  if (mx) mx.innerHTML = mixHtml(rep);
   const f = focusRange();
   const bs = buckets(rep);
   const fi = f ? bs.findIndex((b) => f.from >= b.from && f.from <= b.to) : -1;
@@ -875,7 +880,6 @@ function pinRange(r) {
   const same = state.pin && r && state.pin.from === r.from && state.pin.to === r.to;
   state.pin = same ? null : r;
   state.hover = null;
-  state.modelsAll = false;
   if (state.pin) state.model = null;
   render();
 }
@@ -954,47 +958,41 @@ function settingsHtml() {
   const row = (t, d, ctl, dis) => `<div class="srow${dis ? ' dis' : ''}"><div><div class="t">${t}</div>${d ? `<div class="d">${d}</div>` : ''}</div>${ctl}</div>`;
   const num = (key, label, pre, suf, attrs) => `<label class="num">${pre || ''}<input type="number" inputmode="decimal" ${attrs} value="${esc(s[key])}" aria-label="${esc(label)}" data-set="${key}" data-fk="set:${key}">${suf || ''}</label>`;
   const sw = (key, label) => `<input type="checkbox" class="switch" role="switch" aria-label="${esc(label)}" data-set="${key}" data-fk="set:${key}"${s[key] ? ' checked' : ''}>`;
+  // One group: a heading with a one-line purpose, then its rows in a card.
+  const group = (id, title, about, body) => `<section class="sgroup" aria-labelledby="h-${id}"><div class="sg-h"><h2 id="h-${id}">${title}</h2>${about ? `<p>${about}</p>` : ''}</div><div class="sg-card">${body}</div></section>`;
   const r = state.connRes;
   const conn = state.confirmDisc
     ? `<div class="confirm"><span>Remove the stored key from Orca?</span><button type="button" class="btn danger" data-act="disconnect-yes" data-fk="disconnect-yes">Disconnect</button><button type="button" class="btn ghost" data-act="disconnect-no" data-fk="disconnect-no">Cancel</button></div>`
     : `<button type="button" class="btn" data-act="conn-test" data-fk="conn-test">${state.connBusy ? '<span class="spinner" aria-hidden="true"></span>Testing…' : 'Test connection'}</button><button type="button" class="btn" data-act="replace" data-fk="replace" aria-expanded="${state.replaceOpen}">Replace key</button><button type="button" class="btn ghost danger" data-act="disconnect-ask" data-fk="disconnect-ask">Disconnect</button>`;
   const recent = state.savedAt && Date.now() - state.savedAt < 1600;
-  const opts = !s
-    ? `<p class="${state.settingsErr ? 'err-t' : 'muted'}">${state.settingsErr ? 'Could not load settings: ' + esc(state.settingsErr) : 'Loading settings…'}</p>`
-    : `<section aria-labelledby="h-alerts">
-      <div class="sec-h"><h2 id="h-alerts">Refresh and alerts</h2><span id="set-saved" class="${recent ? 'saved' : 'side'}" role="status">${recent ? 'Saved' : 'Saves when you leave a field'}</span></div>
-      ${row('Refresh every', 'How often Orca checks OpenRouter', num('refreshMinutes', 'Refresh interval in minutes', '', 'min', 'min="1" max="120" step="1"'))}
-      ${row('Low-balance alert', 'Warn when credits drop below this. 0 turns it off.', num('lowBalanceUsd', 'Low balance alert in dollars', '$', '', 'min="0" step="any"'))}
-      ${row('Daily budget', "Notify once when today's spend passes it. 0 turns it off.", num('dailyBudgetUsd', 'Daily budget in dollars', '$', '', 'min="0" step="any"'))}
-      ${row('Monthly budget', 'Warn when spend or its pace passes it. 0 turns it off.', num('monthlyBudgetUsd', 'Monthly budget in dollars', '$', '', 'min="0" step="any"'))}
-      ${row('Desktop notifications', 'For low balance and budgets', sw('notifications', 'Desktop notifications'))}
-    </section>
-    <section aria-labelledby="h-sb">
-      <h2 id="h-sb">Status bar</h2>
-      ${row('Show credits in the status bar', '', sw('statusBar', 'Show credits in the status bar'))}
-      ${row('Next to credits', '', `<select class="select" aria-label="Status bar shows" data-set="statusBarContent" data-fk="set:statusBarContent"${s.statusBar ? '' : ' disabled'}>${SBC.map(([v, l]) => `<option value="${v}"${s.statusBarContent === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`, !s.statusBar)}
-    </section>
-    <section aria-labelledby="h-look">
-      <h2 id="h-look">Banner</h2>
-      ${state.report ? bannerHtml(true) : ''}
-      ${row('Colour', '', `<select class="select" aria-label="Banner colour" data-set="bannerColor" data-fk="set:bannerColor">${BANNER_COLORS.map(([v, l]) => `<option value="${v}"${s.bannerColor === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
-      ${row('Vivid', 'Bold and saturated instead of the quiet gradient', sw('bannerVivid', 'Vivid banner'))}
-    </section>
-    <section aria-labelledby="h-spendset">
-      <h2 id="h-spendset">Spend</h2>
-      ${row('Count BYOK usage', 'Include requests made with your own provider keys', sw('includeByok', 'Count BYOK usage in spend'))}
-    </section>`;
-  return `<section aria-labelledby="h-conn">
-      <h2 id="h-conn">Connection</h2>
-      <div class="conn"><span class="ic">${ICON.check}</span><div class="who"><b>${esc(st.keyLabel || 'Management key')}</b><div>Management key, stored in Orca's encrypted secrets</div></div></div>
-      ${r ? `<p class="conn-res ${r.ok ? 'ok-t' : 'err-t'}" role="${r.ok ? 'status' : 'alert'}">${r.ok ? 'Connected as ' + esc(r.label) : esc(r.error)}</p>` : ''}
-      <div class="conn-acts">${conn}</div>
-      ${state.replaceOpen ? keyFormHtml() : ''}
-    </section>
-    ${opts}
+  const account = group('conn', 'Account', '', `
+    <div class="conn"><span class="ic">${ICON.check}</span><div class="who"><b>${esc(st.keyLabel || 'Management key')}</b><div>Management key, stored in Orca's encrypted secrets</div></div></div>
+    ${r ? `<p class="conn-res ${r.ok ? 'ok-t' : 'err-t'}" role="${r.ok ? 'status' : 'alert'}">${r.ok ? 'Connected as ' + esc(r.label) : esc(r.error)}</p>` : ''}
+    <div class="conn-acts">${conn}</div>
+    ${state.replaceOpen ? keyFormHtml() : ''}`);
+  if (!s) return account + `<p class="${state.settingsErr ? 'err-t' : 'muted'}">${state.settingsErr ? 'Could not load settings: ' + esc(state.settingsErr) : 'Loading settings…'}</p>`;
+  const look = group('look', 'Appearance', '', `<div class="look">
+      <div class="look-ctl">
+        ${row('Colour', '', `<select class="select" aria-label="Banner colour" data-set="bannerColor" data-fk="set:bannerColor">${BANNER_COLORS.map(([v, l]) => `<option value="${v}"${s.bannerColor === v ? ' selected' : ''}>${l}</option>`).join('')}</select>`)}
+        ${row('Vivid', 'Bold instead of quiet', sw('bannerVivid', 'Vivid banner'))}
+      </div>
+      <div class="look-prev">${state.report ? bannerHtml(true) : ''}</div>
+    </div>`);
+  const alerts = group('alerts', 'Alerts and budgets', 'A value of 0 turns an alert off. Budgets only warn; usage is never blocked.', `
+    ${row('Low balance', 'When credits drop below', num('lowBalanceUsd', 'Low balance alert in dollars', '$', '', 'min="0" step="any"'))}
+    ${row('Daily budget', "When today's spend passes", num('dailyBudgetUsd', 'Daily budget in dollars', '$', '', 'min="0" step="any"'))}
+    ${row('Monthly budget', 'When spend or its pace passes', num('monthlyBudgetUsd', 'Monthly budget in dollars', '$', '', 'min="0" step="any"'))}
+    ${row('Desktop notifications', 'Also notify outside the panel', sw('notifications', 'Desktop notifications'))}`);
+  const bar = group('sb', 'Status bar', '', `
+    ${row('Show credits', '', sw('statusBar', 'Show credits in the status bar'))}
+    ${row('Next to credits', '', `<select class="select" aria-label="Status bar shows" data-set="statusBarContent" data-fk="set:statusBarContent"${s.statusBar ? '' : ' disabled'}>${SBC.map(([v, l]) => `<option value="${v}"${s.statusBarContent === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`, !s.statusBar)}`);
+  const data = group('data', 'Data', '', `
+    ${row('Refresh every', 'How often Orca checks OpenRouter', num('refreshMinutes', 'Refresh interval in minutes', '', 'min', 'min="1" max="120" step="1"'))}
+    ${row('Count BYOK usage', 'Requests made with your own provider keys', sw('includeByok', 'Count BYOK usage in spend'))}`);
+  return `<p id="set-saved" class="${recent ? 'saved' : 'side'} set-saved" role="status">${recent ? 'Saved' : 'Changes save on their own'}</p>
+    ${account}${look}${alerts}${bar}${data}
     <section aria-label="About the numbers">
-      <p class="fine">Today is approximate because it comes from key totals. Ranges longer than 30 days fill in from the day you installed.</p>
-      <p class="fine">Days follow UTC. For you a new day starts at ${esc(utcDayStartLocal())}.</p>
+      <p class="fine">Today is approximate because it comes from key totals. Ranges longer than 30 days fill in from the day you installed. Days follow UTC; for you a new day starts at ${esc(utcDayStartLocal())}.</p>
     </section>`;
 }
 
@@ -1057,7 +1055,11 @@ function render() {
     const k = el.id || el.getAttribute('data-fk');
     if (k && (el.type === 'password' || el === active)) keep[k] = { v: el.value, a: el.selectionStart, b: el.selectionEnd };
   });
+  const box = app.querySelector('#u-models .mbox');
+  const boxTop = box ? box.scrollTop : 0;
   app.innerHTML = bodyHtml();
+  const box2 = app.querySelector('#u-models .mbox');
+  if (box2 && boxTop) box2.scrollTop = boxTop;
   Object.keys(keep).forEach((id) => {
     const el = document.getElementById(id) || [...app.querySelectorAll('input[data-fk]')].find((e) => e.getAttribute('data-fk') === id);
     if (el && el.value !== keep[id].v) {
@@ -1241,7 +1243,7 @@ function saveSetting(field, value) {
     setTimeout(() => {
       if (state.savedAt !== at) return;
       const m = $('#set-saved');
-      if (m) { m.className = 'side'; m.textContent = 'Saves when you leave a field'; }
+      if (m) { m.className = 'side set-saved'; m.textContent = 'Changes save on their own'; }
     }, 1500);
     if (field === 'includeByok' || field === 'monthlyBudgetUsd' || field === 'lowBalanceUsd') loadReport(true);
   }).catch((e) => {
@@ -1285,7 +1287,7 @@ app.addEventListener('click', (e) => {
   switch (el.dataset.act) {
     case 'tab': if (state.tab !== v) selectTab(v); break;
     case 'range':
-      if (state.range !== v) { state.range = v; state.pin = null; state.hover = null; state.model = null; state.modelsAll = false; savePrefs(); loadReport(); }
+      if (state.range !== v) { state.range = v; state.pin = null; state.hover = null; state.model = null; savePrefs(); loadReport(); }
       break;
     case 'measure':
       if (state.measure !== v) { state.measure = v; savePrefs(); loadReport(); }
@@ -1294,7 +1296,6 @@ app.addEventListener('click', (e) => {
       if (state.keysRange !== v) { state.keysRange = v; savePrefs(); render(); }
       break;
     case 'model': state.model = state.model === v ? null : v; render(); break;
-    case 'models-more': state.modelsAll = !state.modelsAll; render(); break;
     case 'unpin': state.pin = null; state.hover = null; render(); break;
     case 'inactive': state.inactiveOpen = !state.inactiveOpen; render(); break;
     case 'menu': state.menu = !state.menu; render(); if (state.menu) focusFk('export:daily'); break;

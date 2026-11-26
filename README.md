@@ -11,7 +11,7 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
 - A banner with your **credits left**, how long they last at your recent burn rate, and an **Add credits** button, in the colour you choose.
 - **Warnings** under the banner for credits running out, keys near or at their limit, expiring keys and a passed monthly budget. Each closes with an ×.
 - Three tabs:
-  - **Usage**: today and this month (with an optional monthly budget), a daily chart for 7 days, 30 days or all time in Cost or Tokens, your models, the token mix and a 26-week activity heatmap. Hover or click a day, in the chart or the heatmap, to see that day's models and token mix. Click a model for its details.
+  - **Usage**: today and this month (with an optional monthly budget), a daily chart for 7 days, 30 days or all time in Cost or Tokens, your models, the token mix and a 26-week activity heatmap. Hover a bar to read its day; click a day, in the chart or the heatmap, to see its models and token mix. Click a model for its details.
   - **Keys**: spend per API key with its own 7D, 30D and All switch, limit meters, and badges only for keys that need attention.
   - **Settings**: verify, replace or disconnect your key, refresh interval, alerts, budgets, the status bar item, BYOK counting, and the banner's colour and vivid switch, with a live preview.
 - **CSV exports** of daily totals, models or API keys from the ⋯ menu.

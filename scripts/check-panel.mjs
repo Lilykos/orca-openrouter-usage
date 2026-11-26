@@ -82,11 +82,11 @@ const views = [
   ['monthly budget', 'dark,budget', ['Budget $25.00', 'budget']],
   ['tokens measure', 'dark', ['Tokens', 'prompt to output', 'tokens in total'], { measure: 'tokens' }],
   ['7-day range', 'dark', ['last 7 days'], { range: '7d' }],
-  ['many models (toggle shown)', 'dark,many', ['7 more models']],
+  ['many models', 'dark,many', ['13 used', 'extra-model-7']],
   ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'inactive keys']],
   ['key health', 'dark,tab=keys', ['Expires', 'Near limit', 'resets monthly']],
   ['key warnings under the banner', 'dark', ['expires', 'has used 94% of its']],
-  ['settings', 'dark,tab=settings', ['Connection', 'Refresh every', 'Next to credits', 'Banner', 'Colour', 'Vivid', 'Count BYOK usage', 'Days follow UTC']],
+  ['settings', 'dark,tab=settings', ['Account', 'Appearance', 'Colour', 'Vivid', 'Alerts and budgets', 'Low balance', 'Status bar', 'Next to credits', 'Data', 'Refresh every', 'Count BYOK usage', 'Days follow UTC']],
   ['vivid gold banner', 'dark,banner=gold,vivid', ['Credits left']],
   ['quiet graphite banner, low credits', 'light,low,banner=graphite', ['Credits left', 'days left']],
   ['setup (not connected)', 'dark,setup', ['management key']],
@@ -182,7 +182,7 @@ const report = (results) => results.forEach(([name, ok]) => (ok ? pass(name) : f
 try {
   report(drive('dark', `
     localStorage.clear();
-    for (const [tab, marker] of [['keys', 'API keys'], ['settings', 'Connection'], ['usage', 'Token mix']]) {
+    for (const [tab, marker] of [['keys', 'API keys'], ['settings', 'Alerts and budgets'], ['usage', 'Token mix']]) {
       await click('[data-act="tab"][data-val="' + tab + '"]');
       check('the ' + tab + ' tab shows its content', txt().includes(marker));
     }
@@ -227,11 +227,14 @@ try {
     const day = bars()[bars().length - 3];
     over(day); await wait(150);
     check('hovering a day shows that day in the readout', /\\d+ models?/.test($('#u-readout').innerText) && !/last 30 days/.test($('#u-readout').innerText));
-    check('hovering a day switches Models and Token mix to that day', !/last 30 days/.test($('#h-models').innerText) && !/last 30 days/.test($('#h-mix').innerText));
+    check('hovering leaves Models and Token mix alone', /last 30 days/.test($('#h-models').innerText) && /last 30 days/.test($('#h-mix').innerText));
     day.parentNode.querySelector('.hit').dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: document.body })); await wait(150);
-    check('leaving the chart goes back to the range', /last 30 days/.test($('#h-models').innerText));
+    check('leaving the chart puts the range back in the readout', /last 30 days/.test($('#u-readout').innerText));
+    const boxH = $('#u-models .mbox').offsetHeight;
     bars()[bars().length - 3].dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(250);
     check('clicking a bar selects the day', !!$('[data-act="unpin"]') && !!$('.chart .col.dim'));
+    check('clicking a day switches Models and Token mix to it', !/last 30 days/.test($('#h-models').innerText) && !/last 30 days/.test($('#h-mix').innerText));
+    check('the Models box keeps its size when the day changes', $('#u-models .mbox').offsetHeight === boxH && boxH > 150);
     over(bars()[2]); await wait(150);
     check('a selected day stays while hovering other bars', !!$('[data-act="unpin"]'));
     $('.chart .hit[tabindex="0"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })); await wait(250);
@@ -276,13 +279,13 @@ try {
   `))
   report(drive('dark,many', `
     localStorage.clear();
-    const rows = () => document.querySelectorAll('[data-act="model"]').length;
-    check('only the top 6 models show at first', rows() === 6);
-    await click('[data-act="models-more"]');
-    check('"N more models" reveals the rest (13 in all)', rows() === 13);
-    check('the toggle now offers the top 6 only', /top 6 only/.test(txt()));
-    await click('[data-act="models-more"]');
-    check('collapsing goes back to 6', rows() === 6);
+    await click('[data-act="range"][data-val="30d"]'); await wait(600);
+    const box = $('#u-models .mbox');
+    check('every model is listed (13), inside a box that scrolls', document.querySelectorAll('[data-act="model"]').length === 13 && box.scrollHeight > box.clientHeight);
+    check('the page has no visible scrollbar', getComputedStyle(document.documentElement).scrollbarWidth === 'none');
+    box.scrollTop = 120;
+    window.orca.emit('report.changed', { at: Date.now() }); await wait(900);
+    check('the Models box keeps its scroll position across a refresh', $('#u-models .mbox').scrollTop > 60);
   `))
   report(drive('dark,setup', `
     const input = $('#mgmt');

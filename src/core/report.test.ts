@@ -136,38 +136,36 @@ test('daily bars are zero-filled for missing days', () => {
   assert.ok(bars.every((b) => Object.values(b.byModel).every((v) => v >= 0)))
 })
 
-test('byModel keeps top 5 models plus other, summing to total', () => {
+test('byModel names every model used that day, summing to total', () => {
   const report = buildReport(baseInput())
-  const keyNames = Object.keys(report.daily[0].byModel)
-  assert.equal(keyNames.length, 6)
-  assert.ok(keyNames.includes('other'))
+  const models = new Set(rows.map((r) => r.model))
   for (const b of report.daily.filter((x) => !x.partial)) {
     const sum = Object.values(b.byModel).reduce((s, v) => s + v, 0)
     assert.ok(Math.abs(sum - b.total) < 1e-9, b.date)
+    assert.ok(Object.keys(b.byModel).every((m) => models.has(m)), b.date)
+    assert.ok(!('other' in b.byModel), b.date)
   }
 })
 
-test('otherModels lists the models folded into other, summing to its value', () => {
-  const report = buildReport(baseInput())
-  const top = new Set(Object.keys(report.daily[0].byModel).filter((k) => k !== 'other'))
-  let seen = 0
-  for (const b of report.daily.filter((x) => !x.partial)) {
-    const sum = Object.values(b.otherModels).reduce((s, v) => s + v, 0)
-    assert.ok(Math.abs(sum - b.byModel.other) < 1e-9, b.date)
-    assert.ok(Object.keys(b.otherModels).every((m) => !top.has(m)), b.date)
-    seen += Object.keys(b.otherModels).length
-  }
-  assert.ok(seen > 0, 'fixture folds at least one model into other')
-  assert.deepEqual(report.daily[report.daily.length - 1].otherModels, {})
-})
-
-test('a model outside the range top 5 stays named inside other on its day', () => {
+test('a model that is small over the range keeps its name on its day', () => {
   const big = ['m/a', 'm/b', 'm/c', 'm/d', 'm/e'].map((model) => row({ date: '2026-11-03', model, usage: 10 }))
   const small = row({ date: '2026-11-08', model: 'deepseek/deepseek-v4.1-flash-1017', usage: 0.18 })
   const report = buildReport(baseInput({ rows: [...big, small], range: '7d' }))
   const day = report.daily.find((b) => b.date === '2026-11-08')!
-  assert.equal(day.byModel.other, 0.18)
-  assert.deepEqual(day.otherModels, { 'deepseek/deepseek-v4.1-flash-1017': 0.18 })
+  assert.deepEqual(day.byModel, { 'deepseek/deepseek-v4.1-flash-1017': 0.18 })
+})
+
+test('each completed day carries its token mix', () => {
+  const r = [
+    row({ date: '2026-11-08', prompt: 200, cached: 150, completion: 40, reasoning: 10 }),
+    row({ date: '2026-11-08', model: 'm/b', prompt: 100, cached: 0, completion: 20, reasoning: 0 }),
+  ]
+  const report = buildReport(baseInput({ rows: r, range: '7d' }))
+  const day = report.daily.find((b) => b.date === '2026-11-08')!
+  assert.deepEqual(day.mix, { cachedPrompt: 150, uncachedPrompt: 150, completion: 60, reasoning: 10 })
+  const today = report.daily[report.daily.length - 1]
+  assert.equal(today.partial, true)
+  assert.deepEqual(today.mix, { cachedPrompt: 0, uncachedPrompt: 0, completion: 0, reasoning: 0 })
 })
 
 test('partial today bar only for cost measure', () => {
@@ -176,7 +174,7 @@ test('partial today bar only for cost measure', () => {
   assert.equal(last.date, TODAY)
   assert.equal(last.partial, true)
   assert.equal(last.total, cost.tiles.today)
-  assert.deepEqual(last.byModel, { other: cost.tiles.today })
+  assert.deepEqual(last.byModel, {})
 
   const tokens = buildReport(baseInput({ measure: 'tokens' }))
   assert.ok(tokens.daily.every((b) => !b.partial))
@@ -254,6 +252,8 @@ test('key spend: lifetime for all, rolling sum of completed days for 7d/30d', ()
   assert.equal(spend('all'), 10)
   assert.equal(spend('7d'), 1)
   assert.equal(spend('30d'), 3)
+  const byRange = buildReport(baseInput({ keys: [kinfo()], keyRows, range: '7d' })).keys[0].spendByRange
+  assert.deepEqual(byRange, { '7d': 1, '30d': 3, all: 10 })
 })
 
 test('key spend: null while a recently used key is unfetched, 0 for idle keys', () => {
@@ -285,6 +285,7 @@ test('heatmap has one point for every day from the first stored day, idle days a
     ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08', '2026-11-09'],
   )
   assert.deepEqual(heatmap.map((h) => h.cost), [1, 0, 0, 2, 0, 0, 0, 3])
+  assert.deepEqual(heatmap.map((h) => h.tokens), [110, 0, 0, 110, 0, 0, 0, 110])
   assert.deepEqual(buildReport(baseInput({ rows: [] })).heatmap, [])
 })
 

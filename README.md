@@ -8,16 +8,14 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
 
 ## What it shows
 
-- A banner with your **credits left**, the projected days left at your recent burn rate, and today's spend (approximate).
-- A **This month** tile with spend so far and where it lands by month end at your recent rate.
-- **Spend comparisons** for the last 7 or 30 completed UTC days against the preceding equal period, with per-model changes.
-- An optional **monthly budget**, with progress and a warning when actual or projected spend exceeds it. Set it in Settings; 0 turns it off. Alerts never block usage.
-- **Key health** badges for expiring/expired keys and near/exhausted limits, with daily, weekly or monthly reset labels. Meters use the remaining API allowance.
-- **CSV exports** of daily totals, models or API keys. Pick the data next to Export CSV at the bottom of a report and choose where to save it.
-- Five tabs: **Overview** (tiles, daily spend or tokens by model, today's burn), **Models** (ranked, with a details drawer per model plus the token mix), **Keys** (spend per key for 7d, 30d or all time, with limits and last use) **Ledger** (newest-first daily list, hover a day for its split per model, and an activity heatmap) and **Settings**.
-- The daily chart names your top 5 models in the range; hover a bar to see every model used that day.
-- Range (7d, 30d, All) and Cost or Tokens switches, with refresh on the right.
-- A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a daily budget is passed.
+- A banner with your **credits left**, how long they last at your recent burn rate, and an **Add credits** button. It turns amber when credits run short.
+- **Warnings** under the banner for credits running out, keys near or at their limit, expiring keys and a passed monthly budget. Each closes with an ×.
+- Three tabs:
+  - **Usage**: today and this month (with an optional monthly budget), a daily chart for 7 days, 30 days or all time in Cost or Tokens, your models, the token mix and a 26-week activity heatmap. Hover or click a day, in the chart or the heatmap, to see that day's models and token mix. Click a model for its details.
+  - **Keys**: spend per API key with its own 7D, 30D and All switch, limit meters, and badges only for keys that need attention.
+  - **Settings**: verify, replace or disconnect your key, refresh interval, alerts, budgets, the status bar item and BYOK counting.
+- **CSV exports** of daily totals, models or API keys from the ⋯ menu.
+- A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a budget is passed.
 
 ## Install
 
@@ -27,7 +25,7 @@ orca plugin install Lilykos/orca-openrouter-usage
 
 Orca shows what the plugin is allowed to do and asks you to approve it.
 
-Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.2.0 adds no capabilities or settings. Your key and settings stay with the existing install.
+Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.3.0 adds no capabilities or settings. Your key and settings stay with the existing install.
 
 ## Setup
 
@@ -49,7 +47,7 @@ All numbers come from OpenRouter's `/credits`, `/activity` and `/keys` endpoints
 - **"OpenRouter rejected this key"**: the key is mistyped or revoked. Paste a new management key in Settings.
 - **"Can't reach OpenRouter"**: you are offline or OpenRouter is down; the plugin keeps the last data and retries.
 - **"No secure key store"** (Linux): install a keyring service such as gnome-keyring, then save the key again.
-- Days (the Ledger, the daily chart, Today) follow **UTC**; Settings shows when a new day starts for you.
+- Days (the daily chart, the heatmap, Today) follow **UTC**; Settings shows when a new day starts for you.
 
 ## Develop
 

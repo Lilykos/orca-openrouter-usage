@@ -46,6 +46,8 @@ export interface KeyInfo {
 export interface ReportKey extends KeyInfo {
   /** Spend in the range (USD): rolling completed days for 7d/30d, lifetime for 'all'; null while not yet fetched. */
   spend: number | null
+  /** The same figure for every range, so the Keys view can switch range without a new report. */
+  spendByRange: Record<Range, number | null>
   health: {
     expiry: 'expired' | 'expiring' | null
     limit: 'exhausted' | 'near' | null
@@ -79,14 +81,22 @@ export interface Tiles {
   monthProjected: number | null
 }
 
+export interface TokenMix {
+  cachedPrompt: number
+  uncachedPrompt: number
+  /** Completion tokens; reasoning tokens are counted inside them. */
+  completion: number
+  reasoning: number
+}
+
 export interface DailyBar {
   date: string
   /** Total for the active measure (cost or tokens). */
   total: number
-  /** Top 5 models by value in the range, plus "other"; value in the active measure. */
+  /** Every model used that day, by value in the active measure. Empty for today (no per-model data yet). */
   byModel: Record<string, number>
-  /** The models folded into "other" that day, by value in the active measure. Empty for today (no per-model data yet). */
-  otherModels: Record<string, number>
+  /** That day's token mix. All zeros for today. */
+  mix: TokenMix
   /** True for today: built from key totals, not /activity. */
   partial: boolean
 }
@@ -119,9 +129,9 @@ export interface Report {
   models: Ranked[]
   keys: ReportKey[]
   /** Token mix for the range: cached prompt, uncached prompt, completion, reasoning. */
-  mix: { cachedPrompt: number; uncachedPrompt: number; completion: number; reasoning: number }
-  /** Daily cost for the heatmap (all stored history, ignores range). */
-  heatmap: { date: string; cost: number }[]
+  mix: TokenMix
+  /** Daily cost and tokens (prompt + completion) for the heatmap (all stored history, ignores range). */
+  heatmap: { date: string; cost: number; tokens: number }[]
   /** Today's credit-balance snapshots for the intraday line: t = ms epoch, remaining = USD. */
   intraday: { t: number; remaining: number }[]
   /** Days of history we hold (from first stored day to yesterday). */

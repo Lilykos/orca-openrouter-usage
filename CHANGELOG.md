@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.3.0
+
+A redesign: one answer first, detail on demand.
+
+- Three tabs instead of five: **Usage**, **Keys** and **Settings**. The Ledger and the separate Models tab are folded into Usage.
+- The banner stays, quieter: credits left, how long they last at your recent rate, and an **Add credits** button. It turns amber when credits run short.
+- Warnings sit under the banner, each with an × to close it: credits running out, keys near or at their limit, keys expiring or expired, and a monthly budget being passed. A closed warning comes back only when something changes, such as a new day or a new month.
+- **Usage** leads with Today and this month (with budget progress), then a one-colour daily chart with your 7-day burn drawn over the days it averages. Hover a bar to preview a day, or click it to select it: the Models list and Token mix switch to that day, with every model listed.
+- Click a model to open its details inline (requests, cost per request, change against the previous period, tokens, cache hit, cost per 1M tokens) and see its share in every bar.
+- **Token mix** is now four numbers that follow the range or the selected day: cached prompt, uncached prompt, completion and reasoning, with the cache hit rate and the prompt-to-output ratio.
+- The **activity heatmap** covers 26 weeks, follows Cost or Tokens, and selects a day when you click it, widening the range when needed.
+- **Keys** has its own 7D, 30D and All switch, shows badges only when a key needs attention, and folds inactive keys away.
+- Settings keep the same options in a calmer layout. CSV export moved to the ⋯ menu.
+- Follows Orca's light and dark themes for the charts and accents as well as the surfaces.
+- No new permissions or settings.
+
 ## 1.2.0
 
 - The daily chart's tooltip now lists every model used that day, largest first, instead of lumping the smaller ones into **Other**. The bars still colour the range's top 5 models; the rest stay grey and keep a grey swatch in the tooltip. A model outside the range's top 5 used to be hidden in Other, even on days it ranked high.

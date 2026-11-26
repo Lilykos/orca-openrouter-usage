@@ -2,8 +2,8 @@
   "manifestVersion": 2,
   "id": "openrouter-usage",
   "name": "OpenRouter Usage",
-  "version": "1.2.0",
-  "description": "Track OpenRouter credits, runway and spend from Orca: model comparisons, daily and monthly budgets, API key health, CSV exports and a status bar balance. Read-only; your management key stays in Orca's encrypted secret store.",
+  "version": "1.3.0",
+  "description": "Track OpenRouter credits and runway from Orca: daily spend by model, token mix, an activity heatmap, per-key spend and limits, budgets, CSV exports and a status bar balance. Read-only; your management key stays in Orca's encrypted secret store.",
   "author": {
     "name": "Lilykos",
     "url": "https://github.com/Lilykos"
@@ -14,38 +14,38 @@
   "icon": "images/icon.png",
   "cover": {
     "path": "images/cover.png",
-    "alt": "OpenRouter Usage: one input fanning out to several models, with the title and the features Credits and burn rate, Models, API keys and Daily ledger"
+    "alt": "OpenRouter Usage: one input fanning out to several models, with the title and the features Credits and burn rate, Models, API keys, and Activity and token mix"
   },
   "screenshots": [
     {
       "path": "images/screenshot-overview.png",
-      "alt": "The Overview: credits and runway, monthly spend and projection, comparison with the preceding period, budget progress and a daily spend chart",
-      "caption": "Credits, spend comparisons and monthly budgets",
+      "alt": "The Usage view: credits left in a violet banner, a closable runway warning, today and this month with budget progress, and a one-colour daily spend chart",
+      "caption": "Credits first, detail on demand",
       "theme": "dark"
     },
     {
       "path": "images/screenshot-models.png",
-      "alt": "A model details drawer showing total, share, requests, token breakdown, cache hit rate and a daily sparkline",
-      "caption": "A details drawer for every model",
+      "alt": "A selected day: the chart dims the other bars while Models and Token mix show that day only",
+      "caption": "Pick a day to see its models and tokens",
       "theme": "dark"
     },
     {
       "path": "images/screenshot-keys.png",
-      "alt": "The Keys tab with per-key spend, expiring and expired key badges, near-limit warnings and UTC reset periods",
-      "caption": "Per-key spend, expiring keys and limit health",
+      "alt": "The Keys tab with its own 7D, 30D and All switch, per-key spend, limit meters and only the badges that need attention",
+      "caption": "Per-key spend with its own range",
       "theme": "dark"
     },
     {
       "path": "images/screenshot-ledger.png",
-      "alt": "The Ledger tab: a newest-first list of days with a bar and amount, and an activity calendar; hovering a day shows its spend per model",
-      "caption": "A daily ledger and activity calendar",
+      "alt": "Token mix as four numbers with cache hit and prompt-to-output ratio, above a 26-week activity heatmap",
+      "caption": "Token mix and 26 weeks of activity",
       "theme": "dark"
     },
     {
       "path": "images/screenshot-settings.png",
-      "alt": "The Settings tab with connection test, key replacement, refresh interval, alert thresholds and toggles",
+      "alt": "The Settings tab: connection with test, replace and disconnect, refresh and alert thresholds, budgets, status bar and BYOK switches",
       "caption": "Verify your key and tune alerts",
-      "theme": "dark"
+      "theme": "light"
     }
   ],
   "engines": {

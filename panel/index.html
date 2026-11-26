@@ -6,379 +6,325 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; connect-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'">
 <title>OpenRouter Usage</title>
 <style>
+/* Orca paints --orca-* and puts a light/dark class on <html>; the fallbacks are for the dev preview. */
 :root {
-  --bg: var(--orca-background, #111111);
-  --fg: var(--orca-foreground, #ececec);
-  --card: var(--orca-card, #181818);
-  --muted-fg: var(--orca-muted-foreground, #9a9a9a);
-  --muted: var(--orca-muted, #262626);
-  --border: var(--orca-border, #2a2a2a);
-  --accent: var(--orca-accent, #262626);
-  --primary: var(--orca-primary, #ececec);
-  --radius: var(--orca-radius, 10px);
-  --destructive: var(--orca-destructive, #e34948);
-  /* categorical slots (validated: adjacent CVD ΔE >= 8.4) */
-  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
-  --m0: #3987e5; --m1: #d95926; --m2: #199e70; --m3: #c98500; --m4: #9b6bd6; --m5: #d2507a;
-  --m-other: #6f6f6f;
-  /* sequential blue, dark steps */
-  --q1: #184f95; --q2: #256abf; --q3: #3987e5; --q4: #86b6ef;
   color-scheme: dark;
+  --bg: var(--orca-background, #161616);
+  --fg: var(--orca-foreground, #ececea);
+  --fg-2: color-mix(in srgb, var(--fg) 72%, var(--bg));
+  --muted: var(--orca-muted-foreground, #8a8a84);
+  --border: var(--orca-border, #2a2a2a);
+  --hair: color-mix(in srgb, var(--border) 75%, var(--bg));
+  --hover: var(--orca-accent, #1f1f1f);
+  --seg-bg: var(--orca-muted, #202020);
+  --seg-on: color-mix(in srgb, var(--fg) 14%, var(--bg));
+  --field: var(--orca-input-background, var(--bg));
+  --primary: var(--orca-primary, #ececea);
+  --primary-fg: var(--orca-primary-foreground, #161616);
+  --danger: var(--orca-destructive, #f07c7b);
+  --tip-bg: var(--orca-popover, #222222);
+  --accent: #3987e5;
+  --bar: #3987e5; --bar-soft: #27466b; --bar-today: #1c5cab; --ref: var(--fg);
+  --h0: #232323; --h1: #1c3350; --h2: #1c5cab; --h3: #3987e5; --h4: #86b6ef;
+  --warn: #f2b84b; --warn-mark: #c98500; --warn-bg: #261d0c; --warn-line: #4a3711;
+  --danger-bg: #2b1515; --ok: #4cc38a; --neutral-bg: color-mix(in srgb, var(--fg) 9%, var(--bg));
+  --focus: #5598e7;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+  --bn-bg: radial-gradient(90% 120% at 100% 0%, rgba(124,108,242,.30) 0%, rgba(124,108,242,0) 65%), linear-gradient(135deg, #16152a 0%, #1e1a40 100%);
+  --bn-line: rgba(255,255,255,.07); --bn-motif: #b9b0ff; --bn-fg: #ececea; --bn-fg-2: #c9c6e6;
+  --bn-warn-bg: radial-gradient(90% 120% at 100% 0%, rgba(201,133,0,.26) 0%, rgba(201,133,0,0) 65%), linear-gradient(135deg, #1c160b 0%, #2b200d 100%);
+  --bn-warn-line: rgba(242,184,75,.16); --bn-warn-motif: #f2b84b; --bn-btn: rgba(255,255,255,.06);
 }
 html.light {
-  --bg: var(--orca-background, #ffffff);
-  --fg: var(--orca-foreground, #141414);
-  --card: var(--orca-card, #fcfcfb);
-  --muted-fg: var(--orca-muted-foreground, #6b6b6b);
-  --muted: var(--orca-muted, #eeeeec);
-  --border: var(--orca-border, #e3e3e0);
-  --accent: var(--orca-accent, #f0f0ee);
-  --primary: var(--orca-primary, #141414);
-  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
-  --m0: #2a78d6; --m1: #eb6834; --m2: #1baf7a; --m3: #eda100; --m4: #8a57c4; --m5: #d4467a;
-  --m-other: #b5b5b5;
-  --q1: #b7d3f6; --q2: #6da7ec; --q3: #2a78d6; --q4: #184f95;
   color-scheme: light;
+  --bg: var(--orca-background, #ffffff);
+  --fg: var(--orca-foreground, #18181a);
+  --muted: var(--orca-muted-foreground, #7c7c76);
+  --border: var(--orca-border, #e5e5e1);
+  --hover: var(--orca-accent, #f3f3f0);
+  --seg-bg: var(--orca-muted, #efefec);
+  --seg-on: var(--bg);
+  --primary: var(--orca-primary, #18181a);
+  --primary-fg: var(--orca-primary-foreground, #ffffff);
+  --danger: var(--orca-destructive, #c23a39);
+  --tip-bg: var(--orca-popover, #ffffff);
+  --accent: #2a78d6;
+  --bar: #2a78d6; --bar-soft: #cde2fb; --bar-today: #86b6ef;
+  --h0: #ededea; --h1: #cde2fb; --h2: #86b6ef; --h3: #3987e5; --h4: #1c5cab;
+  --warn: #a35f00; --warn-mark: #eda100; --warn-bg: #fdf4e3; --warn-line: #f3dcae;
+  --danger-bg: #fdeceb; --ok: #1b8a5a;
+  --focus: #2a78d6;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.08);
+  --bn-bg: radial-gradient(90% 120% at 100% 0%, rgba(124,108,242,.16) 0%, rgba(124,108,242,0) 65%), linear-gradient(135deg, #f8f7ff 0%, #efedfe 100%);
+  --bn-line: #e4e0fb; --bn-motif: #6d5fe0; --bn-fg: #18181a; --bn-fg-2: #51514c;
+  --bn-warn-bg: radial-gradient(90% 120% at 100% 0%, rgba(237,161,0,.18) 0%, rgba(237,161,0,0) 65%), linear-gradient(135deg, #fffaf1 0%, #fcefd6 100%);
+  --bn-warn-line: #f1dcae; --bn-warn-motif: #c98500; --bn-btn: rgba(255,255,255,.75);
 }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--fg); }
-body { font: 13px/1.4 var(--orca-font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); -webkit-font-smoothing: antialiased; }
-h1, h2, h3 { margin: 0; font-weight: 600; }
-h1 { font-size: 16px; }
-h2 { font-size: 13px; }
-h3 { font-size: 12px; color: var(--muted-fg); margin-bottom: 6px; }
+body { font: 13px/1.45 var(--orca-font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
 p { margin: 0; }
-button { font: inherit; color: inherit; }
-.muted { color: var(--muted-fg); }
-.small { font-size: 12px; }
-.ok { color: var(--s3); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.muted { color: var(--muted); }
 
-main { padding: 16px; max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+main { padding: 12px 14px 14px; max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 main > * { min-width: 0; }
-.stack { display: flex; flex-direction: column; gap: 16px; min-width: 0; transition: opacity .2s ease; }
-.stack.busy { opacity: .55; }
+.busy { opacity: .6; transition: opacity .2s ease; }
 
-:focus-visible { outline: 2px solid var(--s1); outline-offset: 1px; }
-
-/* buttons */
-.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 4px 11px; border: 1px solid var(--border); background: var(--card); color: var(--fg); border-radius: 8px; cursor: pointer; white-space: nowrap; }
-.btn:hover { background: var(--accent); }
-.btn:disabled { opacity: .6; cursor: default; }
-.btn.primary { background: var(--primary); color: var(--orca-primary-foreground, var(--bg)); border-color: transparent; }
-.btn.primary:hover { opacity: .9; }
-.btn.ghost { background: transparent; }
-.btn.danger { color: var(--destructive); }
-.link { background: none; border: 0; padding: 0; color: var(--s1); text-decoration: underline; cursor: pointer; font: inherit; }
-.icon-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; padding: 0; border: 1px solid var(--border); background: var(--card); color: var(--fg); border-radius: 8px; cursor: pointer; }
-.icon-btn:hover { background: var(--accent); }
-.icon-btn:disabled { opacity: .6; cursor: progress; }
+/* ---------- controls ---------- */
+.seg { display: inline-flex; background: var(--seg-bg); border-radius: 7px; padding: 2px; gap: 2px; flex: none; }
+.seg button { border: 0; background: transparent; padding: 3px 10px; border-radius: 5px; font-size: 12px; color: var(--fg-2); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; min-height: 24px; }
+.seg button:hover { color: var(--fg); }
+.seg button[aria-selected="true"], .seg button[aria-checked="true"] { background: var(--seg-on); color: var(--fg); font-weight: 600; box-shadow: 0 0 0 1px var(--border); }
+.seg.sm button { padding: 2px 7px; font-size: 11.5px; min-height: 22px; }
+.dot-badge { width: 6px; height: 6px; border-radius: 50%; background: var(--warn-mark); }
+.icon-btn { width: 28px; height: 28px; display: inline-grid; place-items: center; border: 0; background: transparent; border-radius: 6px; color: var(--muted); cursor: pointer; flex: none; padding: 0; }
+.icon-btn:hover { background: var(--hover); color: var(--fg); }
+.icon-btn:disabled { opacity: .6; cursor: default; }
 .icon-btn.spin svg { animation: spin .9s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--fg); display: inline-block; vertical-align: -1px; animation: spin .8s linear infinite; }
+.btn { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+.btn:hover { background: var(--hover); }
+.btn:disabled { opacity: .6; cursor: default; }
+.btn.primary { background: var(--primary); color: var(--primary-fg); border-color: transparent; }
+.btn.primary:hover { opacity: .9; background: var(--primary); }
+.btn.danger { color: var(--danger); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.link { border: 0; background: none; padding: 0; color: var(--accent); cursor: pointer; font-size: 12px; display: inline-flex; gap: 4px; align-items: center; }
+.link:hover { text-decoration: underline; }
+.spinner { width: 11px; height: 11px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--fg); display: inline-block; animation: spin .8s linear infinite; }
 
-/* header and banner */
-.head { display: flex; flex-direction: column; gap: 10px; }
-.banner { position: relative; overflow: hidden; display: flex; flex-direction: column; padding: 16px 18px 18px; border-radius: 12px; color: #fff;
-  background: radial-gradient(120% 140% at 85% 20%, rgba(167, 139, 250, .55) 0%, rgba(167, 139, 250, 0) 55%), linear-gradient(120deg, #0b1020 0%, #1e1b4b 45%, #4338ca 100%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .10); }
-.banner-art { position: absolute; top: 50%; right: -22px; transform: translateY(-50%); height: 66%; width: auto; max-width: 100%; pointer-events: none; }
-@media (max-width: 380px) { .banner-art { opacity: .3; } }
-.banner > :not(.banner-art) { position: relative; }
-.banner h1 { font-size: 18px; letter-spacing: -.01em; color: #fff; }
-.banner .updated { color: rgba(255, 255, 255, .72); }
-.bn-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.bn-top .title-block { flex-direction: column; align-items: flex-start; gap: 2px; margin-right: 0; }
-.bn-kicker { margin-top: 14px; font-size: 12px; color: rgba(255, 255, 255, .72); }
-.bn-amt { margin-top: 2px; font-size: 34px; font-weight: 700; line-height: 1.1; color: #fff; font-variant-numeric: tabular-nums; }
-.banner.danger .bn-amt { text-shadow: 0 0 18px rgba(248, 113, 113, .7); }
-.bn-skel { display: block; width: 170px; max-width: 70%; height: 36px; margin-top: 4px; border-radius: 8px; background: linear-gradient(90deg, rgba(255, 255, 255, .10) 0%, rgba(255, 255, 255, .26) 50%, rgba(255, 255, 255, .10) 100%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
-.bn-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin-top: 6px; font-size: 12px; color: rgba(255, 255, 255, .85); font-variant-numeric: tabular-nums; }
-.pill { display: inline-flex; align-items: center; min-height: 22px; padding: 1px 10px; border-radius: 999px; background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .28); color: #fff; font-weight: 600; cursor: help; }
-.banner.warn .pill { background: rgba(251, 191, 36, .30); border-color: rgba(251, 191, 36, .65); }
-.banner.danger .pill { background: rgba(248, 113, 113, .34); border-color: rgba(248, 113, 113, .75); }
-.title-block { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-right: auto; }
-.updated { font-size: 12px; color: var(--muted-fg); }
-.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-.tabrow { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); margin: 10px 0 2px; }
-.tabrow .tabs { flex: 1; min-width: 0; margin: 0 0 -1px; }
-.tab-refresh { flex: none; width: 30px; height: 30px; border-color: transparent; background: transparent; color: var(--muted-fg); }
-.tab-refresh:hover { color: var(--fg); background: var(--accent); }
-.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; position: relative; }
-.tabs button { border: 0; background: transparent; color: var(--muted-fg); padding: 8px 12px; min-height: 36px; cursor: pointer; border-bottom: 2px solid transparent; font: inherit; white-space: nowrap; transition: color .15s ease, border-color .15s ease; }
-.tabs button:hover { color: var(--fg); }
-.tabs button[aria-selected="true"] { color: var(--fg); font-weight: 600; border-bottom-color: var(--s1, #3b82f6); }
-.tabs button:focus-visible { outline: 2px solid var(--s1, #3b82f6); outline-offset: -2px; border-radius: 4px; }
-@media (max-width: 360px) { .tabs button { padding: 8px 8px; } }
-.tabbody { display: grid; gap: 12px; }
-.keylist { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
-.kr { padding: 10px 0; border-top: 1px solid var(--border); display: grid; gap: 6px; }
-.kr:first-child { border-top: 0; padding-top: 2px; }
-.kr-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.kr-name { display: inline-flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; }
-.kr-val { font-weight: 600; font-variant-numeric: tabular-nums; }
-.kr-meta { color: var(--muted-fg); font-size: 12px; line-height: 1.5; }
-.lg-sum { margin: 0 0 8px; }
-.ledger { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.lg-row { display: grid; grid-template-columns: 96px 1fr auto; gap: 10px; align-items: center; padding: 4px 6px; margin: 0 -6px; }
-.lg-date { white-space: nowrap; color: var(--muted-fg); font-variant-numeric: tabular-nums; }
-.lg-date em { font-style: normal; font-size: 11px; opacity: .8; }
-.lg-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 55%, transparent); overflow: hidden; }
-.lg-bar i { display: block; height: 100%; border-radius: 4px; background: var(--s1, #3b82f6); }
-.lg-row.partial .lg-bar i { opacity: .55; }
-.lg-row { border-radius: 6px; cursor: default; }
-.lg-row:hover, .lg-row:focus-visible { background: var(--accent); }
-.lg-row:focus-visible { outline: 2px solid var(--s1); outline-offset: -2px; }
-.lg-val { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
-.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; padding: 2px; background: var(--card); gap: 2px; }
-.seg button { border: 0; background: transparent; color: var(--muted-fg); min-height: 26px; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
-.seg button:hover { color: var(--fg); background: color-mix(in srgb, var(--accent) 55%, transparent); }
-.seg button[aria-checked="true"] { background: var(--accent); color: var(--fg); font-weight: 600; box-shadow: inset 0 0 0 1px var(--border); }
+/* ---------- banner ---------- */
+.banner { position: relative; overflow: hidden; border-radius: 10px; padding: 12px 14px 13px; background: var(--bn-bg); box-shadow: inset 0 0 0 1px var(--bn-line); color: var(--bn-fg); }
+.banner.warn { background: var(--bn-warn-bg); box-shadow: inset 0 0 0 1px var(--bn-warn-line); }
+.bn-motif { position: absolute; right: 0; top: 0; height: 100%; width: min(62%, 280px); color: var(--bn-motif); pointer-events: none;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 55%); mask-image: linear-gradient(90deg, transparent 0%, #000 55%); }
+.banner.warn .bn-motif { color: var(--bn-warn-motif); }
+.banner > :not(.bn-motif) { position: relative; }
+.bn-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 26px; }
+.bn-label { font-size: 12px; color: var(--bn-fg-2); }
+.hero-num { font-size: 38px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+.hero-num .c { font-size: 26px; color: var(--bn-fg-2); font-weight: 500; }
+.hero-sub { font-size: 12px; color: var(--bn-fg-2); }
+.banner .btn { background: var(--bn-btn); border-color: var(--bn-line); color: var(--bn-fg); }
+.banner.warn .btn { border-color: var(--bn-warn-line); }
+.bn-skel { display: block; width: 150px; height: 38px; margin: 4px 0; border-radius: 8px; background: color-mix(in srgb, var(--bn-fg) 10%, transparent); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .5; } }
 
-/* notices and states */
-.notice, .status { padding: 10px 12px; border-radius: var(--radius); border: 1px dashed var(--border); color: var(--muted-fg); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: space-between; }
-.notice { border-style: solid; border-color: color-mix(in srgb, var(--s4) 60%, var(--border)); background: color-mix(in srgb, var(--s4) 10%, var(--card)); color: var(--fg); }
-.status.error { border-style: solid; border-color: var(--destructive); color: var(--fg); }
-.status.error button { margin-left: auto; }
-.err-line { display: block; max-width: 100%; padding: 8px 10px; border: 1px solid var(--destructive); border-radius: 8px; background: color-mix(in srgb, var(--destructive) 12%, var(--card)); color: var(--fg); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
-.err-card { border-color: var(--destructive); }
-.err-card h2 { font-size: 14px; }
-.skeleton { display: flex; flex-direction: column; gap: 16px; }
-.skel { border-radius: var(--radius); border: 1px solid var(--border); background: linear-gradient(90deg, var(--card) 0%, var(--accent) 50%, var(--card) 100%); background-size: 200% 100%; animation: shimmer 1.4s ease-in-out infinite; }
-.sk-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-.sk-tiles .skel { height: 88px; }
-@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+/* ---------- warnings ---------- */
+.warns { display: flex; flex-direction: column; gap: 6px; margin-top: -8px; }
+.attn { display: flex; align-items: flex-start; gap: 8px; border: 1px solid var(--warn-line); background: var(--warn-bg); border-radius: 7px; padding: 7px 4px 7px 10px; font-size: 12.5px; }
+.attn.danger { border-color: color-mix(in srgb, var(--danger) 35%, transparent); background: var(--danger-bg); }
+.attn > svg { flex: none; color: var(--warn); margin-top: 2px; }
+.attn.danger > svg { color: var(--danger); }
+.attn .txt { flex: 1; min-width: 0; }
+.attn .x { width: 22px; height: 22px; margin: -2px 0; }
+.notice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--neutral-bg); border-radius: 7px; padding: 8px 10px; font-size: 12.5px; }
+.notice.err { border-color: color-mix(in srgb, var(--danger) 35%, transparent); background: var(--danger-bg); }
+.notice > span { flex: 1; min-width: 12em; }
 
-/* forms, setup and settings */
-.setup { gap: 14px; }
-.setup p { line-height: 1.5; }
-.keyform { display: flex; flex-direction: column; gap: 10px; }
-.row-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-.hr { border: 0; border-top: 1px solid var(--border); margin: 0; }
-.field { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--muted-fg); }
-.field em { font-style: normal; opacity: .8; }
-.field input { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--orca-input, var(--border)); border-radius: 8px; padding: 8px 10px; min-height: 36px; width: 100%; }
-.field input:focus-visible { outline: 2px solid var(--s1); outline-offset: 0; }
-.field select { font: inherit; font-size: 13px; color: var(--fg); background: var(--bg); border: 1px solid var(--orca-input, var(--border)); border-radius: 8px; padding: 8px 10px; min-height: 36px; width: 100%; }
-.field select:disabled { opacity: .6; }
-.opt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-.toggles { display: flex; flex-direction: column; gap: 2px; }
-.toggle { display: inline-flex; gap: 8px; align-items: center; min-height: 28px; cursor: pointer; }
-.toggle input { accent-color: var(--s1); width: 15px; height: 15px; margin: 0; flex: none; cursor: pointer; }
-.err { color: var(--destructive); font-size: 12px; }
-.err:empty { display: none; }
-.foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; padding: 2px 2px 8px; }
-.confirm { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.danger-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+/* ---------- top bar ---------- */
+.p-top { display: flex; align-items: center; gap: 6px; }
+.p-top .spacer { flex: 1; }
+.menu-wrap { position: relative; }
+.menu { position: absolute; right: 0; top: 32px; z-index: 5; min-width: 200px; background: var(--tip-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: var(--shadow); padding: 4px; }
+.menu button { display: flex; width: 100%; text-align: left; border: 0; background: transparent; padding: 6px 8px; border-radius: 5px; font-size: 12.5px; cursor: pointer; justify-content: space-between; gap: 12px; }
+.menu button:hover, .menu button:focus-visible { background: var(--hover); }
+.menu .k { color: var(--muted); font-size: 11.5px; }
+.menu-msg { font-size: 12px; color: var(--muted); margin-top: -10px; }
+.menu-msg.ok { color: var(--ok); }
 
-/* tiles */
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
-.tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; min-height: 88px; }
-.tile-cache { cursor: help; }
-.tile .label { color: var(--muted-fg); font-size: 12px; }
-.tile .value { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile .sub { color: var(--muted-fg); font-size: 11px; }
+/* ---------- sections ---------- */
+.sec-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; min-width: 0; flex-wrap: wrap; }
+.sec-h .ctl { display: flex; gap: 6px; }
+h1 { font-size: 15px; margin: 0; font-weight: 600; }
+h2 { font-size: 13px; font-weight: 600; margin: 0; white-space: nowrap; }
+h2 .scope { font-weight: 400; color: var(--muted); }
+.side { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.note-row { font-size: 12px; color: var(--muted); padding: 6px 0; margin: 0; }
 
-/* cards */
-.card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; max-width: 100%; }
-.card-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 16px; }
-.grid-2 > * { min-width: 0; }
-.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
-.legend li { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
-.legend .v { color: var(--muted-fg); font-variant-numeric: tabular-nums; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--hair); }
+.pair > div { padding: 0 0 10px; min-width: 0; }
+.pair > div + div { padding-left: 14px; border-left: 1px solid var(--hair); }
+.pair .label { font-size: 12px; color: var(--fg-2); }
+.pair .v { font-size: 17px; font-weight: 600; margin-top: 1px; font-variant-numeric: tabular-nums; }
+.pair .s { font-size: 12px; color: var(--muted); }
+.budget { margin-top: 10px; }
+.meter { position: relative; height: 6px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+.meter i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; }
+.meter .proj { background: var(--bar-soft); }
+.meter .now { background: var(--bar); }
+.meter .now.warn { background: var(--warn-mark); }
+.budget .row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); margin-top: 5px; }
+.budget.over .row span:last-child { color: var(--warn); }
 
-/* charts */
-svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
-.chart text { font: 10px var(--orca-font-sans, system-ui, sans-serif); fill: var(--muted-fg); }
-.chart .grid { stroke: var(--border); stroke-opacity: .7; stroke-width: 1; stroke-dasharray: 2 4; }
-.chart .col { outline: none; }
-.chart .col rect.hit { fill: transparent; }
-.chart .col:hover rect.hit, .chart .col:focus-visible rect.hit { fill: var(--accent); fill-opacity: .6; }
-.chart .col:focus-visible rect.hit { stroke: var(--s1); stroke-width: 1; }
-.chart .col:hover .seg-rect { filter: brightness(1.15); }
-.chart .partial-outline { fill: none; stroke: var(--fg); stroke-opacity: .55; stroke-width: 1; stroke-dasharray: 3 2; }
-.chart .line { fill: none; stroke: var(--s1); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.chart .area { fill: var(--s1); opacity: .12; }
-.chart .dot { fill: var(--s1); stroke: var(--card); stroke-width: 1.5; cursor: default; outline: none; }
-.chart .dot:focus-visible { stroke: var(--s1); stroke-width: 2; }
-.chart .t-strong { font-size: 14px; font-weight: 600; fill: var(--fg); }
-.heat { cursor: default; }
-.heat-wrap { overflow-x: auto; }
-.cell { rx: 2; }
-.cell:hover { stroke: var(--fg); stroke-width: 1; }
-.cell.q0 { fill: var(--muted); }
-.cell.q1 { fill: var(--q1); }
-.cell.q2 { fill: var(--q2); }
-.cell.q3 { fill: var(--q3); }
-.cell.q4 { fill: var(--q4); }
-.scale { display: flex; gap: 3px; align-items: center; font-size: 11px; justify-content: flex-end; }
-.scale i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
-.scale .muted:first-child { margin-right: 3px; }
-.scale .muted:last-child { margin-left: 3px; }
-.scale .q0 { background: var(--muted); }
-.scale .q1 { background: var(--q1); }
-.scale .q2 { background: var(--q2); }
-.scale .q3 { background: var(--q3); }
-.scale .q4 { background: var(--q4); }
-.mix { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; justify-content: center; flex: 1; }
-svg.chart.donut { width: 96px; height: 96px; flex: none; }
-.donut text { font: 9px var(--orca-font-sans, system-ui, sans-serif); fill: var(--muted-fg); }
-.mix-legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 12px; min-width: 150px; }
-.mix-legend li { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; }
-.mix-legend .v { font-variant-numeric: tabular-nums; color: var(--muted-fg); text-align: right; }
-
-/* ranked lists */
-.rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.rk-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; min-width: 0; }
-.rk-name { display: flex; gap: 7px; align-items: center; min-width: 0; overflow-wrap: anywhere; font-weight: 500; }
-.rk-val { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
-.rk-bar { display: block; width: 100%; height: 8px; margin: 6px 0 4px; background: var(--muted); border-radius: 999px; overflow: hidden; }
-.rk-bar i { display: block; height: 100%; border-radius: inherit; min-width: 2px; }
-.rk-meta { font-size: 12px; color: var(--muted-fg); font-variant-numeric: tabular-nums; }
-
-/* tables */
-.table-wrap { overflow-x: auto; width: 100%; min-width: 0; max-width: 100%; }
-.kname { font-weight: 500; overflow-wrap: anywhere; }
-.khash { display: block; font-size: 11px; color: var(--muted-fg); font-weight: 400; }
-.off { display: inline-block; font-size: 11px; border: 1px solid var(--border); border-radius: 999px; padding: 0 7px; color: var(--muted-fg); margin-left: 6px; vertical-align: 1px; font-weight: 400; }
-.lim { display: flex; flex-direction: column; gap: 4px; font-size: 12px; }
-.meter-sm { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
-.meter-sm i { display: block; height: 100%; background: var(--s1); border-radius: inherit; }
-
-/* daily chart */
-.chart .ylab { opacity: .85; }
-.dchart .col { transition: opacity .15s ease; }
-.dchart:has(.col:hover) .col:not(:hover), .dchart:has(.col:focus-visible) .col:not(:focus-visible) { opacity: .4; }
-.chart .avg { fill: none; stroke: var(--fg); stroke-opacity: .6; stroke-width: 1; stroke-dasharray: 4 3; }
-.chart .avg-lab { font-weight: 600; fill: var(--fg); stroke: var(--card); stroke-width: 3px; paint-order: stroke; stroke-linejoin: round; }
-
-/* share bars */
-.sharebar { display: flex; gap: 3px; height: 12px; border-radius: 999px; overflow: hidden; background: var(--muted); }
-.sharebar.slim { height: 8px; }
-.sharebar > i { display: block; min-width: 3px; height: 100%; border-radius: 3px; }
+.readout { display: flex; align-items: baseline; gap: 8px; min-height: 24px; min-width: 0; }
+.readout .v { font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.readout .m { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.pin { margin-left: auto; border: 0; background: var(--neutral-bg); color: var(--fg-2); font-size: 11.5px; border-radius: 10px; padding: 1px 8px; cursor: pointer; white-space: nowrap; flex: none; }
+.chart { display: block; width: 100%; height: 132px; margin-top: 4px; touch-action: pan-y; }
+.chart .grid { stroke: var(--hair); stroke-width: 1; shape-rendering: crispEdges; }
+.chart .tick, .heat .tick { font-size: 10px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart .b-total { fill: var(--bar); }
+.chart.sel .b-total { fill: var(--bar-soft); }
+.chart .b-model { fill: var(--bar); }
+.chart .b-today { fill: var(--bar-today); }
+.chart.sel .b-today { fill: var(--bar-soft); }
+.chart .hit { fill: transparent; cursor: pointer; outline: none; }
+.chart .col.dim path { opacity: .35; }
+.chart .hit:focus-visible { stroke: var(--focus); stroke-width: 1.5; }
+.chart .ref { stroke: var(--ref); stroke-width: 1.5; stroke-linecap: round; }
+.chart .ref-l { font-size: 10px; fill: var(--fg-2); font-weight: 600; }
 
 /* models */
-.mlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.mlist li + li { border-top: 1px solid var(--border); }
-.mrow { display: flex; flex-direction: column; gap: 8px; width: 100%; margin: 0; padding: 10px 8px; border: 0; border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
-.mrow:hover { background: var(--accent); }
-.mr-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.mr-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-.mr-val { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.mr-pct { min-width: 46px; text-align: right; font-size: 12px; color: var(--muted-fg); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.mr-chev { flex: none; color: var(--muted-fg); }
-.mr-bar { display: block; height: 5px; border-radius: 999px; background: var(--muted); overflow: hidden; }
-.mr-bar i { display: block; height: 100%; border-radius: inherit; min-width: 2px; }
-.mlist-more { margin-top: 8px; align-self: flex-start; }
+.mlist { list-style: none; margin: 4px 0 0; padding: 0; }
+.mrow { display: grid; grid-template-columns: minmax(0, 1fr) auto 38px; column-gap: 10px; align-items: center; padding: 6px 6px 7px; margin: 0 -6px; width: calc(100% + 12px); border: 0; background: transparent; border-radius: 6px; text-align: left; font-size: 13px; }
+button.mrow { cursor: pointer; }
+button.mrow:hover { background: var(--hover); }
+.mrow .n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mrow .vd { color: var(--muted); }
+.mrow .val { font-variant-numeric: tabular-nums; font-weight: 500; text-align: right; white-space: nowrap; }
+.mrow .pct { font-variant-numeric: tabular-nums; color: var(--muted); text-align: right; font-size: 12px; }
+.mrow .bar { grid-column: 1 / -1; height: 2px; margin-top: 5px; background: var(--hair); border-radius: 1px; overflow: hidden; }
+.mrow .bar i { display: block; height: 100%; background: var(--bar-soft); border-radius: 1px; }
+.mrow[aria-expanded="true"] .bar i { background: var(--bar); }
+.mrow[aria-expanded="true"] .n { font-weight: 600; }
+.mrow.more .n { color: var(--fg-2); }
+.mdetail { padding: 8px 0 12px; border-bottom: 1px solid var(--hair); margin-bottom: 4px; }
+.kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 12px; }
+.kv div { min-width: 0; }
+.kv .k { font-size: 11.5px; color: var(--muted); }
+.kv .v { font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-/* drawer */
-.scrim { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .45); animation: fade-in .2s ease; }
-.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; max-height: 80vh; display: flex; flex-direction: column; background: var(--card); color: var(--fg); border: 1px solid var(--border); border-bottom: 0; border-radius: 16px 16px 0 0; box-shadow: 0 -12px 40px rgba(0, 0, 0, .3); animation: sheet-up .26s cubic-bezier(.2, .8, .2, 1); }
-.sheet-grab { flex: none; width: 40px; height: 4px; margin: 8px auto 0; border-radius: 999px; background: var(--border); }
-.sheet-body { overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 720px; margin: 0 auto; padding: 12px 16px 20px; }
-.dr-head { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
-.dr-dot { width: 12px; height: 12px; margin-top: 6px; }
-.dr-title { flex: 1; min-width: 0; }
-.dr-title h2 { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dr-title p { margin-top: 2px; overflow-wrap: anywhere; }
-.dr-big { font-size: 28px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
-.dr-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.dr-grid .tile { min-height: 74px; }
-.dr-grid .tile:last-child:nth-child(odd) { grid-column: 1 / -1; }
-.dr-chart { gap: 8px; }
-.spark-mm, .spark-x { display: flex; justify-content: space-between; gap: 8px; font-variant-numeric: tabular-nums; }
-.spark-svg { width: 100%; height: auto; display: block; overflow: visible; }
-.sp-area { opacity: .14; }
-.sp-line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.sp-hit { fill: transparent; }
-.sp:hover .sp-hit { fill: var(--accent); fill-opacity: .6; }
-.sp-dot { opacity: 0; stroke: var(--card); stroke-width: 1.5; }
-.sp:hover .sp-dot { opacity: 1; }
-@keyframes fade-in { from { opacity: 0; } }
-@keyframes sheet-up { from { transform: translateY(100%); } }
+/* token mix: four numbers */
+.quad-top { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.quad-top b { color: var(--fg); font-weight: 600; }
+.quad { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.quad > div { background: var(--hover); border-radius: 7px; padding: 7px 10px; min-width: 0; }
+.quad .k { font-size: 11.5px; color: var(--muted); }
+.quad .v { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.quad .s { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* heatmap */
+.heat { display: block; width: 100%; }
+.heat .cell { cursor: pointer; outline: none; }
+.heat .cell:focus-visible, .heat .cell.pinned { stroke: var(--fg); stroke-width: 1.5; }
+.heat .cell.today { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 1.5; }
+.heat-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.scale { display: inline-flex; align-items: center; gap: 3px; }
+.scale i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
 
 /* keys */
-.kcards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.kcard { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
-.kcard.is-off, .kslim.is-off { opacity: .6; }
-.kc-top { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.avatar { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; color: #fff; font-weight: 600; font-size: 13px; }
-.avatar.sm { width: 20px; height: 20px; font-size: 10px; }
-.kc-id { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
-.kc-id .kc-name { max-width: 100%; }
-.kc-name { min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.kc-life { flex: none; text-align: right; }
-.kc-val { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.kc-lab { font-size: 11px; color: var(--muted-fg); }
-.st { flex: none; font-size: 11px; line-height: 18px; padding: 0 7px; border: 1px solid var(--border); border-radius: 999px; color: var(--muted-fg); white-space: nowrap; }
-.st.ok { color: var(--s3); border-color: color-mix(in srgb, var(--s3) 50%, var(--border)); }
-.st.warn { color: var(--s4); }
-.st.danger { color: var(--destructive); }
-.key-badges { display: flex; flex-wrap: wrap; gap: 4px; }
-.kc-lim { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; font-variant-numeric: tabular-nums; }
-.kc-lim .kmeter { flex: 1 1 90px; min-width: 0; }
-.kmeter { height: 6px; border-radius: 999px; background: var(--muted); overflow: hidden; }
-.kmeter i { display: block; height: 100%; border-radius: inherit; background: var(--s1); }
-.kmeter.warn i { background: var(--s4); }
-.kmeter.danger i { background: var(--destructive); }
-.kc-pct { white-space: nowrap; }
-.kc-pct.warn { color: var(--s4); }
-.kc-pct.danger { color: var(--destructive); }
-.kc-foot { font-size: 11px; color: var(--muted-fg); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.kslim { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; }
-.kslim .kc-name { flex: 1; font-size: 13px; font-weight: 500; }
-.kslim-meta { flex: none; color: var(--muted-fg); white-space: nowrap; }
+.klist { list-style: none; margin: 0; padding: 0; }
+.krow { padding: 10px 0; border-top: 1px solid var(--hair); }
+.krow:first-child { border-top: 0; padding-top: 4px; }
+.k1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.k1 .n { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.k1 .v { margin-left: auto; font-weight: 500; font-variant-numeric: tabular-nums; }
+.k2 { font-size: 12px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; justify-content: space-between; flex-wrap: wrap; }
+.badge { font-size: 11px; font-weight: 500; padding: 0 6px; border-radius: 4px; line-height: 18px; white-space: nowrap; flex: none; }
+.badge.warn { color: var(--warn); background: var(--warn-bg); }
+.badge.danger { color: var(--danger); background: var(--danger-bg); }
+.badge.neutral { color: var(--fg-2); background: var(--neutral-bg); }
+.kmeter { margin-top: 7px; }
+.kmeter .meter { height: 4px; }
+.inactive { width: 100%; border: 0; border-top: 1px solid var(--hair); background: transparent; text-align: left; padding: 10px 0 2px; color: var(--fg-2); font-size: 12.5px; cursor: pointer; display: flex; justify-content: space-between; }
+.inactive .n { color: var(--fg-2); }
 
-/* tooltip */
-.tip { position: fixed; z-index: 70; pointer-events: none; background: var(--orca-popover, var(--card)); color: var(--orca-popover-foreground, var(--fg)); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.25); max-width: 260px; line-height: 1.35; }
-.tip[hidden] { display: none; }
-.tip b { display: block; margin-bottom: 4px; }
-.tip .row { display: flex; justify-content: space-between; gap: 12px; }
-.tip .row span:last-child { font-variant-numeric: tabular-nums; }
-.tip .sw { margin-right: 4px; vertical-align: -1px; }
-.tip .note { margin-top: 6px; color: var(--muted-fg); font-size: 11px; }
-.tip .row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.tip .row.more { color: var(--muted-fg); font-size: 11px; }
-.tip hr { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
+/* settings */
+.conn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 0 10px; }
+.conn .ic { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--neutral-bg); color: var(--ok); }
+.conn .who { min-width: 0; }
+.conn .who b { font: 600 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.conn .who div { font-size: 12px; color: var(--muted); }
+.conn-acts { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 0 10px; align-items: center; }
+.conn-res { font-size: 12px; margin: 0 0 8px; }
+.ok-t { color: var(--ok); }
+.err-t { color: var(--danger); }
+.confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-2); }
+.keyform { display: flex; flex-direction: column; gap: 8px; padding: 2px 0 10px; }
+.keyform input { height: 30px; border: 1px solid var(--border); border-radius: 6px; background: var(--field); padding: 0 8px; font-size: 13px; width: 100%; }
+.keyform .acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.keyform .msg { font-size: 12px; min-height: 1em; }
+.srow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 9px 0; border-top: 1px solid var(--hair); }
+.srow .t { font-size: 13px; }
+.srow .d { font-size: 12px; color: var(--muted); }
+.srow.dis { opacity: .5; }
+.num { display: inline-flex; align-items: center; height: 26px; border: 1px solid var(--border); border-radius: 6px; background: var(--field); padding: 0 8px; gap: 3px; color: var(--muted); font-size: 12px; }
+.num:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+.num input { width: 52px; border: 0; background: transparent; outline: none; text-align: right; font-size: 13px; color: var(--fg); font-variant-numeric: tabular-nums; padding: 0; -moz-appearance: textfield; }
+.num input::-webkit-outer-spin-button, .num input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.select { height: 26px; border: 1px solid var(--border); border-radius: 6px; background: var(--field); font-size: 12.5px; padding: 0 6px; max-width: 190px; }
+.switch { appearance: none; -webkit-appearance: none; width: 32px; height: 18px; border-radius: 9px; background: var(--border); position: relative; cursor: pointer; flex: none; margin: 0; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: left .15s ease; }
+.switch:checked { background: var(--accent); }
+.switch:checked::after { left: 16px; }
+.saved { font-size: 12px; color: var(--ok); }
+.fine { font-size: 12px; color: var(--muted); }
+.fine + .fine { margin-top: 6px; }
 
-@media (max-width: 480px) {
-  main { padding: 12px; gap: 12px; }
-  .stack { gap: 12px; }
-  .grid-2 { gap: 12px; }
-  .card { padding: 14px; }
-  .banner { padding: 14px; }
-  .bn-amt { font-size: 30px; }
-  .tile .value { font-size: 16px; }
+.setup h1 { margin-bottom: 6px; }
+.setup p { color: var(--muted); font-size: 12.5px; margin-bottom: 10px; }
+.skel { border-radius: 8px; background: var(--neutral-bg); animation: pulse 1.4s ease-in-out infinite; }
+.p-foot { font-size: 11.5px; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; border-top: 1px solid var(--hair); padding-top: 10px; }
+
+@media (max-width: 440px) {
+  .hero-num { font-size: 34px; }
+  .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
-  .icon-btn.spin svg { opacity: .6; }
 }
 </style>
 </head>
 <body>
 <main id="app" aria-live="off"></main>
-<div id="tip" class="tip" role="tooltip" hidden></div>
 <script>
 (() => {
 'use strict';
 
 const KEYS_URL = 'https://openrouter.ai/settings/management-keys';
+const CREDITS_URL = 'https://openrouter.ai/settings/credits';
 const PREF_KEY = 'openrouter-usage:prefs';
-const SEG_RANGE = [['7d', '7d'], ['30d', '30d'], ['all', 'All']];
-const TABS = [['overview', 'Overview'], ['models', 'Models'], ['keys', 'Keys'], ['ledger', 'Ledger'], ['settings', 'Settings']];
-const SEG_MEASURE = [['cost', 'Cost'], ['tokens', 'Tokens']];
+const DISMISS_KEY = 'openrouter-usage:dismissed';
+const TABS = [['usage', 'Usage'], ['keys', 'Keys'], ['settings', 'Settings']];
+const RANGES = [['7d', '7D'], ['30d', '30D'], ['all', 'All']];
+const MEASURES = [['cost', 'Cost'], ['tokens', 'Tokens']];
+const RANGE_DAYS = { '7d': 7, '30d': 30 };
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const TODAY_TIP = "Approximate: today's spend so far, computed from key totals rather than per-request activity.";
-const SBC = [['credits', 'Credits left'], ['credits-today', "Credits left and today's spend"], ['credits-days', 'Credits left and days left']];
-const ICON_REFRESH = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg>';
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const SBC = [['credits', 'Nothing else'], ['credits-today', "Today's spend"], ['credits-days', 'Days left']];
+const TOP_MODELS = 6;
+const HEAT_DAYS = 182;
+const WEEKLY_AFTER = 92;   // the All range draws weekly bars once it holds more days than this
+
+const ICON = {
+  gauge: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>',
+  refresh: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg>',
+  more: '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>',
+  warn: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+  ext: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7"/><path d="M8 7h9v9"/></svg>',
+  check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
+  x: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+};
+// The fan-out motif: one input splitting into many models. Thin, faded, decorative.
+const MOTIF = `<svg class="bn-motif" viewBox="0 0 240 120" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false">
+  <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.1">
+    ${[10, 30, 50, 70, 90, 110].map((y, k) => `<path d="M70 60 C 125 60, 135 ${y}, 196 ${y}" stroke-opacity="${[.34, .28, .4, .3, .24, .2][k]}"/><path d="M196 ${y} H 240" stroke-opacity=".16" stroke-dasharray="1.5 5"/>`).join('')}
+  </g>
+  <g fill="currentColor"><circle cx="70" cy="60" r="12" fill-opacity=".08"/><circle cx="70" cy="60" r="3.5" fill-opacity=".45"/>
+    ${[10, 30, 50, 70, 90, 110].map((y, k) => `<circle cx="196" cy="${y}" r="2.4" fill-opacity="${[.4, .32, .45, .34, .28, .22][k]}"/>`).join('')}
+  </g></svg>`;
 
 const state = {
+  tab: 'usage',
   range: '30d',
   measure: 'cost',
-  tab: 'overview',
+  keysRange: '30d',
   status: null,
   report: null,
   error: null,
@@ -386,27 +332,32 @@ const state = {
   loading: false,
   refreshing: false,
   exporting: false,
-  exportKind: 'daily',
-  exportMessage: '',
+  exportMessage: null,    // { ok, text }
+  menu: false,
   settings: null,
   settingsErr: null,
   savedAt: 0,
   connBusy: false,
   connRes: null,           // { ok: true, label } | { ok: false, error }
   keyMsg: null,            // { ok, text }
+  replaceOpen: false,
   confirmDisc: false,
-  drawer: null,            // model name open in the drawer, or null
-  modelsAll: false,        // Models tab: show every row
-  pendingDrawer: false     // #drawer: open the first model once the first report lands
+  hover: null,             // date range under the pointer: { from, to }
+  pin: null,               // pinned date range: { from, to }
+  pendingPin: null,        // a heatmap day to pin once the wider range has loaded
+  model: null,             // model selected in the list (range mode)
+  modelsAll: false,
+  inactiveOpen: false,
+  heatFocus: null
 };
 
-let tips = [];
 let reqSeq = 0;
 let quietRun = false;          // the running refresh is automatic: no spinner, no dimmed content
 let lastAutoAt = 0;
-const AUTO_STALE_MS = 2 * 60e3; // refresh on start/focus when data is older than this
-const AUTO_GAP_MS = 30e3;       // and never more than one automatic refresh per this window
-const colorMap = new Map();
+const AUTO_STALE_MS = 2 * 60e3;
+const AUTO_GAP_MS = 30e3;
+let dismissed = new Set();
+let devHook = null;           // dev preview only: a state to show once the first report is in
 
 /* ---------- helpers ---------- */
 
@@ -417,6 +368,7 @@ const errMsg = (e) => (e && e.message) || String(e);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const round2 = (v) => Math.round(v * 100) / 100;
 const round4 = (v) => Math.round(v * 10000) / 10000;
+const TOK = () => state.measure === 'tokens';
 
 function money(v) {
   if (v == null || !isFinite(v)) return '—';
@@ -426,7 +378,6 @@ function money(v) {
   const [i, f] = a.toFixed(2).split('.');
   return sign + '$' + groupInt(i) + '.' + f;
 }
-
 function compact(n) {
   if (n == null || !isFinite(n)) return '—';
   const a = Math.abs(n);
@@ -437,735 +388,651 @@ function compact(n) {
   if (a >= 1e3) return f(a / 1e3, 'K');
   return sign + Math.round(a);
 }
+// Shares: whole percents, one decimal under 10%, "<1%" for slivers.
+const pct = (v) => (v == null || !isFinite(v) ? '—' : v >= 0.995 ? '100%' : v >= 0.095 ? Math.round(v * 100) + '%' : v >= 0.005 ? (v * 100).toFixed(1).replace(/\.0$/, '') + '%' : v > 0 ? '<1%' : '0%');
+const fmtV = (v) => (TOK() ? compact(v) : money(v));
+const splitName = (id) => { const s = String(id == null ? '' : id); const i = s.indexOf('/'); return i < 0 ? ['', s] : [s.slice(0, i + 1), s.slice(i + 1)]; };
 
-const pct = (v) => (v == null || !isFinite(v) ? '—' : (v * 100).toFixed(1) + '%');
-const fmt = (v, meas) => (meas === 'tokens' ? compact(v) + ' tokens' : money(v));
-const axisFmt = (v, meas) => (meas === 'tokens' ? compact(v) : v >= 10 ? '$' + groupInt(String(Math.round(v))) : money(v));
-const fmtMeas = (v, meas) => (meas === 'tokens' ? compact(v) + ' tok' : money(v));
-const shortModel = (name) => { const s = String(name == null ? '' : name); const i = s.lastIndexOf('/'); return i >= 0 && i < s.length - 1 ? s.slice(i + 1) : s; };
-const legendName = (k) => (k === 'other' ? 'Other' : shortModel(k));
-
-function dayLabel(d) {
-  const [, m, dd] = d.split('-');
-  return MONTHS[+m - 1] + ' ' + (+dd);
-}
-function dayLong(d) {
-  return dayLabel(d) + ', ' + d.slice(0, 4);
-}
-const weekday = (d) => new Date(d + 'T00:00:00Z').getUTCDay();
 const utcToday = () => new Date().toISOString().slice(0, 10);
 function addDays(d, n) {
   const x = new Date(d + 'T00:00:00Z');
   x.setUTCDate(x.getUTCDate() + n);
   return x.toISOString().slice(0, 10);
 }
-
+const weekday = (d) => new Date(d + 'T00:00:00Z').getUTCDay();
+const dShort = (d) => MONTHS[+d.slice(5, 7) - 1] + ' ' + (+d.slice(8, 10));
+const dLong = (d) => WD[weekday(d)] + ', ' + dShort(d);
+const weekStart = (d) => addDays(d, -((weekday(d) + 6) % 7));
 function relTime(ts) {
   const t = typeof ts === 'string' ? Date.parse(ts) : ts;
   if (!isFinite(t)) return '—';
   const s = Math.max(0, (Date.now() - t) / 1000);
   if (s < 45) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + 'm ago';
-  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
-  if (s < 2592000) return Math.floor(s / 86400) + 'd ago';
-  return new Date(t).toISOString().slice(0, 10);
+  if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+  if (s < 2 * 86400) return 'yesterday';
+  if (s < 2592000) return Math.floor(s / 86400) + ' d ago';
+  return dShort(new Date(t).toISOString().slice(0, 10));
 }
 const absTime = (t) => new Date(t).toLocaleString();
-
-// Local clock time of today's 00:00 UTC: when a "day" starts for this person.
 const utcDayStartLocal = () => new Date(Date.parse(utcToday() + 'T00:00:00Z')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-const utcFact = () => 'Days follow UTC. For you a new day starts at ' + utcDayStartLocal() + ' local time.';
 
-function niceStep(v) {
-  const p = Math.pow(10, Math.floor(Math.log10(v)));
-  const f = v / p;
-  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p;
+function niceStep(max) {
+  const raw = max / 3, mag = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
 }
 
-function colorOf(key) {
-  if (key === 'other') return 'var(--m-other)';
-  if (!colorMap.has(key)) colorMap.set(key, colorMap.size % 6);
-  return 'var(--m' + colorMap.get(key) + ')';
-}
-
-function addTip(html) {
-  tips.push(html);
-  return tips.length - 1;
-}
-
-const chartW = () => Math.max(240, Math.min(window.innerWidth, 1100) - (window.innerWidth <= 480 ? 56 : 68));
-
-function legendKeys(days) {
-  const tot = {};
-  days.forEach((d) => Object.keys(d.byModel).forEach((k) => { tot[k] = (tot[k] || 0) + d.byModel[k]; }));
-  return Object.keys(tot).sort((a, b) => (a === 'other') - (b === 'other') || tot[b] - tot[a]);
-}
-
-/* ---------- prefs (per-viewer convenience only) ---------- */
+/* ---------- prefs and dismissed warnings (per-viewer conveniences only) ---------- */
 
 function loadPrefs() {
   try {
-    const raw = localStorage.getItem(PREF_KEY);
-    if (!raw) return;
-    const p = JSON.parse(raw);
-    if (['7d', '30d', 'all'].includes(p.range)) state.range = p.range;
-    if (['cost', 'tokens'].includes(p.measure)) state.measure = p.measure;
+    const p = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+    if (RANGES.some(([v]) => v === p.range)) state.range = p.range;
+    if (RANGES.some(([v]) => v === p.keysRange)) state.keysRange = p.keysRange;
+    if (MEASURES.some(([v]) => v === p.measure)) state.measure = p.measure;
     if (TABS.some(([id]) => id === p.tab)) state.tab = p.tab;
-  } catch (e) { /* storage unavailable: use defaults */ }
-}
-
-function savePrefs() {
+  } catch (e) { /* storage unavailable: defaults */ }
   try {
-    localStorage.setItem(PREF_KEY, JSON.stringify({ range: state.range, measure: state.measure, tab: state.tab }));
-  } catch (e) { /* storage unavailable: ignore */ }
+    const d = JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]');
+    if (Array.isArray(d)) dismissed = new Set(d.filter((x) => typeof x === 'string').slice(-200));
+  } catch (e) { /* storage unavailable: show every warning */ }
+}
+function savePrefs() {
+  try { localStorage.setItem(PREF_KEY, JSON.stringify({ range: state.range, keysRange: state.keysRange, measure: state.measure, tab: state.tab })); } catch (e) { /* ignore */ }
+}
+function saveDismissed() {
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissed].slice(-200))); } catch (e) { /* ignore */ }
 }
 
 /* ---------- host bridge ---------- */
 
 const host = () => window.orca;
-
 async function req(name, input) {
   const r = await host().plugin.request(name, input === undefined ? {} : input);
-  // Tolerate a bridge that wraps the handler result as { output }.
   if (r && typeof r === 'object' && !Array.isArray(r) && Object.keys(r).length === 1 && 'output' in r) return r.output;
   return r;
 }
+const openUrl = (url) => Promise.resolve(host().shell && host().shell.openExternal(url)).catch(() => {});
 
-/* ---------- rendering: header and banner ---------- */
+/* ---------- derived data ---------- */
 
 const lowOf = () => (state.settings && state.settings.lowBalanceUsd) || 0;
+// Runway is short: 3 days or less at the recent rate, or credits under the low-balance alert.
+function runwayShort(rep) {
+  const b = rep.balance;
+  return (b.daysLeft != null && b.daysLeft <= 3) || (lowOf() > 0 && b.remaining < lowOf());
+}
+const keyName = (k) => k.name || k.label || String(k.hash || '').slice(0, 8) || 'Unnamed key';
+const keySpend = (k, range) => (k.spendByRange ? k.spendByRange[range] : k.spend);
+const RESET = { daily: 'daily', weekly: 'weekly', monthly: 'monthly' };
 
-// Warning tone from the low-balance alert: danger at half the threshold, warning at the threshold.
-function balanceTone(rep) {
-  const low = lowOf();
-  if (!rep || !(low > 0)) return '';
-  const rem = rep.balance.remaining;
-  return rem <= low / 2 ? 'danger' : rem <= low ? 'warn' : '';
+// One warning per thing worth acting on. Ids carry what makes them new again (a date, a key, a month).
+function warnings(rep) {
+  const out = [];
+  const today = utcToday();
+  const b = rep.balance;
+  if (runwayShort(rep)) {
+    let text;
+    if (b.daysLeft != null && b.burnPerDay) {
+      const n = Math.round(b.daysLeft);
+      const end = addDays(today, Math.max(0, Math.round(b.daysLeft)));
+      text = b.daysLeft < 1 ? `Credits run out <b>today</b> at your recent rate` : `About <b>${n} day${n === 1 ? '' : 's'} left</b>, until around ${esc(dLong(end))}`;
+    } else text = `Credits are below your ${esc(money(lowOf()))} alert`;
+    out.push({ id: 'runway:' + today, tone: b.daysLeft != null && b.daysLeft < 1 ? 'danger' : 'warn', html: text });
+  }
+  for (const k of rep.keys || []) {
+    if (k.disabled) continue;
+    const h = k.health || {};
+    const n = `<b>${esc(keyName(k))}</b>`;
+    if (h.limit === 'exhausted') out.push({ id: `key:${k.hash}:exhausted`, tone: 'danger', html: `${n} has reached its ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit` });
+    else if (h.limit === 'near') out.push({ id: `key:${k.hash}:near`, tone: 'warn', html: `${n} has used ${pct(h.usedFraction)} of its ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit` });
+    if (h.expiry === 'expiring' && k.expiresAt) out.push({ id: `key:${k.hash}:expiring`, tone: 'warn', html: `${n} expires ${esc(dLong(k.expiresAt.slice(0, 10)))}` });
+    else if (h.expiry === 'expired') out.push({ id: `key:${k.hash}:expired`, tone: 'danger', html: `${n} has expired` });
+  }
+  const budget = rep.monthlyBudgetUsd;
+  const t = rep.tiles;
+  if (budget > 0 && (t.monthToDate > budget || (t.monthProjected != null && t.monthProjected > budget))) {
+    const month = MONTHS_LONG[+today.slice(5, 7) - 1];
+    out.push({ id: 'budget:' + today.slice(0, 7), tone: 'warn', html: t.monthToDate > budget
+      ? `${month} spend ${esc(money(t.monthToDate))} is over your ${esc(money(budget))} budget`
+      : `${month} is on pace for ${esc(money(t.monthProjected))}, over your ${esc(money(budget))} budget` });
+  }
+  return out.filter((w) => !dismissed.has(w.id));
 }
 
-function creditsHtml(rep) {
+// Chart buckets: one per day, or one per week when All holds a long history.
+function buckets(rep) {
+  const days = rep.daily;
+  if (!(rep.range === 'all' && days.length > WEEKLY_AFTER)) return days.map((d) => ({ from: d.date, to: d.date, total: d.total, byModel: d.byModel, partial: d.partial, week: false }));
+  const out = [];
+  for (const d of days) {
+    const ws = weekStart(d.date);
+    let b = out[out.length - 1];
+    if (!b || b.from !== ws) { b = { from: ws, to: d.date, total: 0, byModel: {}, partial: false, week: true }; out.push(b); }
+    b.to = d.date;
+    b.total += d.total;
+    for (const m in d.byModel) b.byModel[m] = (b.byModel[m] || 0) + d.byModel[m];
+    if (d.partial) b.partial = true;
+  }
+  return out;
+}
+
+// The days a date range covers, merged into one: total, models, mix.
+function aggregate(rep, r) {
+  const ds = rep.daily.filter((d) => d.date >= r.from && d.date <= r.to);
+  const out = { from: r.from, to: r.to, total: 0, byModel: {}, mix: { cachedPrompt: 0, uncachedPrompt: 0, completion: 0, reasoning: 0 }, partial: false, days: ds.length };
+  for (const d of ds) {
+    out.total += d.total;
+    for (const m in d.byModel) out.byModel[m] = (out.byModel[m] || 0) + d.byModel[m];
+    for (const k in out.mix) out.mix[k] += (d.mix && d.mix[k]) || 0;
+    if (d.partial) out.partial = true;
+  }
+  out.todayOnly = out.partial && ds.length === 1;
+  return out;
+}
+const focusRange = () => state.pin || state.hover;
+const rangeLabel = (r) => (r.from === r.to ? dLong(r.from) : 'Week of ' + dShort(r.from));
+const scopeLabel = (rep) => {
+  const f = focusRange();
+  if (f) return f.from === f.to ? dShort(f.from) : 'week of ' + dShort(f.from);
+  return rep.range === 'all' ? 'all time' : 'last ' + RANGE_DAYS[rep.range] + ' days';
+};
+const modelVal = (m) => (TOK() ? m.prompt + m.completion : m.cost);
+
+/* ---------- rendering: banner, warnings, top bar ---------- */
+
+function bannerHtml() {
+  const rep = state.report;
   if (!rep) {
-    return `<div class="bn-kicker">Credits left</div><span class="bn-skel" aria-hidden="true"></span><span class="sr-only">Loading credits</span>`;
+    return `<section class="banner" aria-label="Credits">${MOTIF}<div class="bn-top"><span class="bn-label">Credits left</span></div><span class="bn-skel" aria-hidden="true"></span><span class="sr-only">Loading credits</span><div class="hero-sub">&nbsp;</div></section>`;
   }
   const b = rep.balance;
-  let days = '<span>No recent spend to project runway</span>';
-  if (b.daysLeft != null && b.burnPerDay != null) {
+  const warn = runwayShort(rep);
+  const [whole, cents] = money(b.remaining).split('.');
+  let sub = 'No recent spend to project how long credits last';
+  if (b.burnPerDay && b.daysLeft != null) {
     const n = Math.round(b.daysLeft);
-    const when = b.daysLeft < 1 ? 'less than 1 day' : `~${n} day${n === 1 ? '' : 's'}`;
-    days = `<span>${esc(when)} left at ${esc(money(b.burnPerDay))}/day</span>`;
+    sub = warn
+      ? `At ${money(b.burnPerDay)} a day, the average of the last 7 days`
+      : `About ${n} day${n === 1 ? '' : 's'} left at ${money(b.burnPerDay)} a day`;
   }
-  return `<div class="bn-kicker">Credits left</div>
-    <div class="bn-amt">${esc(money(b.remaining))}</div>
-    <div class="bn-sub">${days}<span class="pill" tabindex="0" title="${esc(TODAY_TIP + ' ' + utcFact())}">Today ≈ ${esc(money(rep.tiles.today))}</span></div>`;
+  return `<section class="banner${warn ? ' warn' : ''}" aria-label="Credits">${MOTIF}
+    <div class="bn-top"><span class="bn-label">Credits left</span><button type="button" class="btn" data-act="add-credits" data-fk="add-credits">Add credits ${ICON.ext}</button></div>
+    <div class="hero-num">${esc(whole)}${cents ? `<span class="c">.${esc(cents)}</span>` : ''}</div>
+    <div class="hero-sub">${esc(sub)}</div>
+  </section>`;
 }
 
-function tabsHtml() {
-  return `<div class="tabs" role="tablist" aria-label="Sections">${TABS.map(([id, label]) =>
-    `<button type="button" role="tab" id="tab-${id}" aria-selected="${state.tab === id}" aria-controls="tabpanel" tabindex="${state.tab === id ? 0 : -1}" data-act="tab" data-val="${id}" data-fk="tab:${id}">${label}</button>`).join('')}</div>`;
-}
-
-function headHtml() {
-  const st = state.status;
-  const ready = !!(st && st.configured);
+function warningsHtml() {
   const rep = state.report;
+  if (!rep) return '';
+  const ws = warnings(rep);
+  if (!ws.length) return '';
+  return `<div class="warns" role="list" aria-label="Warnings">${ws.map((w) => `<div class="attn${w.tone === 'danger' ? ' danger' : ''}" role="listitem">${ICON.warn}<span class="txt">${w.html}</span><button type="button" class="icon-btn x" data-act="dismiss-warn" data-val="${esc(w.id)}" data-fk="dismiss:${esc(w.id)}" aria-label="Dismiss" title="Dismiss">${ICON.x}</button></div>`).join('')}</div>`;
+}
+
+function topHtml() {
+  const st = state.status;
   const busy = !quietRun && (state.refreshing || !!(st && st.refreshing));
-  const tone = ready ? balanceTone(rep) : '';
-  const upd = rep
-    ? `<span class="updated" data-rel="${rep.generatedAt}" data-prefix="Updated ">Updated ${relTime(rep.generatedAt)}</span>`
-    : `<span class="updated">${state.loading ? 'Loading…' : !st ? 'Connecting…' : ready ? 'Waiting for data' : 'Not connected'}</span>`;
-  const seg = (list, cur, group) => list.map(([v, l]) =>
-    `<button type="button" role="radio" aria-checked="${cur === v}" tabindex="${cur === v ? 0 : -1}" data-act="${group}" data-val="${v}" data-fk="${group}:${v}">${l}</button>`).join('');
-  let h = `<header class="head"><div class="banner${tone ? ' ' + tone : ''}"><svg class="banner-art" viewBox="220 0 186 100" preserveAspectRatio="xMaxYMid meet" aria-hidden="true" focusable="false">
-      <defs><linearGradient id="bn-line" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".85"/><stop offset="1" stop-color="#c7d2fe" stop-opacity=".35"/></linearGradient></defs>
-      <g fill="none" stroke="url(#bn-line)" stroke-width="1.6" stroke-linecap="round">
-        <path d="M236 50 C 280 50, 292 14, 340 14"/><path d="M236 50 C 280 50, 292 38, 340 38"/>
-        <path d="M236 50 C 280 50, 292 62, 340 62"/><path d="M236 50 C 280 50, 292 86, 340 86"/>
-        <path d="M340 14 H 392 M340 38 H 392 M340 62 H 392 M340 86 H 392" stroke-opacity=".35" stroke-dasharray="2 6"/>
-      </g>
-      <g fill="#fff"><circle cx="236" cy="50" r="6" fill-opacity=".95"/><circle cx="236" cy="50" r="12" fill-opacity=".12"/>
-        <circle cx="340" cy="14" r="4"/><circle cx="340" cy="38" r="4" fill-opacity=".8"/><circle cx="340" cy="62" r="4" fill-opacity=".9"/><circle cx="340" cy="86" r="4" fill-opacity=".7"/></g>
-    </svg>
-    <div class="bn-top"><div class="title-block"><h1>OpenRouter Usage</h1>${upd}</div></div>`;
-  if (ready && (rep || !(st && st.lastError))) h += creditsHtml(rep);
-  h += '</div>';
-  if (ready) {
-    const refresh = `<button type="button" class="icon-btn tab-refresh${busy ? ' spin' : ''}" data-act="refresh" data-fk="refresh" aria-label="Refresh now" title="Refresh"${busy ? ' disabled' : ''}>${ICON_REFRESH}</button>`;
-    h += `<div class="tabrow">${tabsHtml()}${refresh}</div>`;
-    const tab = state.tab;
-    const range = tab === 'settings' ? '' : `<div class="seg" role="radiogroup" aria-label="Range">${seg(SEG_RANGE, state.range, 'range')}</div>`;
-    const measure = tab === 'settings' || tab === 'keys' ? '' : `<div class="seg" role="radiogroup" aria-label="Measure">${seg(SEG_MEASURE, state.measure, 'measure')}</div>`;
-    if (range || measure) h += `<div class="controls">${range}${measure}</div>`;
+  const keysWarn = state.report && (state.report.keys || []).some((k) => !k.disabled && k.health && (k.health.limit || k.health.expiry === 'expiring'));
+  const tab = ([id, label]) => `<button type="button" role="tab" id="tab-${id}" aria-selected="${state.tab === id}" tabindex="${state.tab === id ? 0 : -1}" data-act="tab" data-val="${id}" data-fk="tab:${id}">${label}${id === 'keys' && keysWarn ? '<span class="dot-badge" title="A key needs attention"></span>' : ''}</button>`;
+  const menu = state.menu ? `<div class="menu" role="menu">
+      <button role="menuitem" type="button" data-act="export" data-val="daily" data-fk="export:daily">Export daily spend<span class="k">CSV</span></button>
+      <button role="menuitem" type="button" data-act="export" data-val="models" data-fk="export:models">Export models<span class="k">CSV</span></button>
+      <button role="menuitem" type="button" data-act="export" data-val="keys" data-fk="export:keys">Export keys<span class="k">CSV</span></button>
+    </div>` : '';
+  return `<div class="p-top">
+    <div class="seg tabs" role="tablist" aria-label="View">${TABS.map(tab).join('')}</div>
+    <span class="spacer"></span>
+    <button type="button" class="icon-btn${busy ? ' spin' : ''}" data-act="refresh" data-fk="refresh" aria-label="Refresh now" title="Refresh"${busy ? ' disabled' : ''}>${ICON.refresh}</button>
+    <div class="menu-wrap"><button type="button" class="icon-btn" aria-label="More" aria-haspopup="menu" aria-expanded="${state.menu}" data-act="menu" data-fk="menu"${state.exporting ? ' disabled' : ''}>${state.exporting ? '<span class="spinner" aria-hidden="true"></span>' : ICON.more}</button>${menu}</div>
+  </div>${state.exportMessage ? `<p class="menu-msg${state.exportMessage.ok ? ' ok' : ''}" role="status">${esc(state.exportMessage.text)}</p>` : ''}`;
+}
+
+/* ---------- rendering: usage ---------- */
+
+function todayMonthHtml(rep) {
+  const t = rep.tiles;
+  const month = MONTHS_LONG[+utcToday().slice(5, 7) - 1];
+  const budget = rep.monthlyBudgetUsd;
+  let meter = '';
+  if (budget > 0) {
+    const proj = t.monthProjected;
+    const over = t.monthToDate > budget || (proj != null && proj > budget);
+    const w = (v) => Math.min(100, Math.max(0, (v / budget) * 100)).toFixed(1);
+    meter = `<div class="budget${over ? ' over' : ''}">
+      <div class="meter" role="meter" aria-label="Monthly budget used" aria-valuemin="0" aria-valuemax="${budget}" aria-valuenow="${round2(Math.min(budget, t.monthToDate))}" aria-valuetext="${esc(money(t.monthToDate) + ' of ' + money(budget))}">${proj != null ? `<i class="proj" style="width:${w(proj)}%"></i>` : ''}<i class="now${over ? ' warn' : ''}" style="width:${w(t.monthToDate)}%"></i></div>
+      <div class="row"><span>Budget ${esc(money(budget))}</span><span>${proj != null ? 'pace ' + esc(money(proj)) + ' · ' : ''}${over ? 'over budget' : 'within budget'}</span></div>
+    </div>`;
   }
-  return h + '</header>';
+  return `<section aria-label="Today and this month">
+    <div class="pair">
+      <div title="Approximate: computed from your key totals. Days follow UTC; for you a new day starts at ${esc(utcDayStartLocal())}."><div class="label">Today</div><div class="v">${esc(money(t.today))}</div><div class="s">so far · UTC day</div></div>
+      <div><div class="label">${month}</div><div class="v">${esc(money(t.monthToDate))}</div><div class="s">${t.monthProjected != null ? 'on pace for ~' + esc(money(t.monthProjected)) : 'so far, UTC month'}</div></div>
+    </div>${meter}
+  </section>`;
 }
 
-/* ---------- rendering: content ---------- */
-
-function skeletonHtml() {
-  return `<div class="skeleton" role="status" aria-label="Loading usage">
-    <div class="sk-tiles"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
-    <div class="skel" style="height:200px"></div>
-    <div class="grid-2"><div class="skel" style="height:200px"></div><div class="skel" style="height:200px"></div></div>
-  </div>`;
+function readoutHtml(rep) {
+  const f = focusRange();
+  if (f) {
+    const a = aggregate(rep, f);
+    const pending = TOK() && a.todayOnly;
+    const n = Object.keys(a.byModel).length;
+    const meta = pending ? 'Today · token counts arrive after the UTC day ends' : rangeLabel(f) + (a.partial ? ' · so far' : ` · ${n} model${n === 1 ? '' : 's'}`);
+    return `<div class="readout" aria-live="polite"><span class="v">${pending ? '—' : esc(fmtV(a.total))}</span><span class="m">${esc(meta)}</span>${state.pin ? `<button type="button" class="pin" data-act="unpin" data-fk="unpin" aria-label="Clear the selected day">${esc(f.from === f.to ? dShort(f.from) : 'Week')} ✕</button>` : ''}</div>`;
+  }
+  const done = rep.daily.filter((d) => !d.partial);
+  const total = done.reduce((s, d) => s + d.total, 0);
+  let label = TOK() ? 'tokens · ' : '';
+  label += rep.range === 'all' ? (done.length ? 'since ' + dShort(done[0].date) : 'all time') : 'last ' + RANGE_DAYS[rep.range] + ' days';
+  const c = rep.comparison;
+  if (c && !TOK()) {
+    const r = c.previous > 0 ? c.current / c.previous : null;
+    if (c.changePercent == null) label += ' · new spend';
+    else if (r != null && r >= 1.5) label += ` · ${r.toFixed(1)}× the previous ${c.days}`;
+    else if (Math.round(c.changePercent) === 0) label += ' · same as the previous ' + c.days;
+    else label += ` · ${c.changePercent > 0 ? '↑' : '↓'} ${Math.abs(Math.round(c.changePercent))}% vs previous ${c.days}`;
+  } else if (!TOK() && rep.range !== 'all') label += ' · comparison after more history';
+  return `<div class="readout"><span class="v">${esc(fmtV(total))}</span><span class="m">${esc(label)}</span></div>`;
 }
 
-function noticeHtml() {
-  return state.notice ? `<div class="notice" role="alert"><span>${esc(state.notice)}</span><button type="button" class="btn ghost" data-act="dismiss-notice" data-fk="dismiss-notice">Dismiss</button></div>` : '';
+function modelsHtml(rep) {
+  const f = focusRange();
+  const head = (side) => `<div class="sec-h"><h2 id="h-models">Models <span class="scope">· ${esc(scopeLabel(rep))}</span></h2><span class="side">${side}</span></div>`;
+  if (f) {
+    const a = aggregate(rep, f);
+    if (a.todayOnly) return head('') + `<p class="note-row">OpenRouter reports a UTC day's per-model split after the day ends. Today's ${esc(money(rep.tiles.today))} so far comes from your key totals.</p>`;
+    const ranked = Object.entries(a.byModel).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]);
+    const total = ranked.reduce((s, [, v]) => s + v, 0);
+    const rows = ranked.map(([id, v]) => {
+      const [vd, nm] = splitName(id);
+      return `<li><div class="mrow" title="${esc(id)}"><span class="n"><span class="vd">${esc(vd)}</span>${esc(nm)}</span><span class="val">${esc(fmtV(v))}</span><span class="pct">${pct(total ? v / total : 0)}</span><span class="bar" aria-hidden="true"><i style="width:${Math.max(1, total ? (v / total) * 100 : 0).toFixed(1)}%"></i></span></div></li>`;
+    }).join('');
+    return head(`${ranked.length} used`) + `<ul class="mlist">${rows || '<li class="note-row">No usage on this day.</li>'}</ul>`;
+  }
+  const list = rep.models.slice().sort((x, y) => modelVal(y) - modelVal(x));
+  const total = list.reduce((s, m) => s + modelVal(m), 0);
+  const top = list.length === TOP_MODELS + 1 ? TOP_MODELS + 1 : TOP_MODELS;
+  const shown = state.modelsAll ? list : list.slice(0, top);
+  const rest = list.slice(top);
+  const rows = shown.map((m) => {
+    const [vd, nm] = splitName(m.name);
+    const v = modelVal(m);
+    const open = state.model === m.name;
+    return `<li><button type="button" class="mrow" aria-expanded="${open}" data-act="model" data-val="${esc(m.name)}" data-fk="model:${esc(m.name)}" title="${esc(m.name)}">
+      <span class="n"><span class="vd">${esc(vd)}</span>${esc(nm)}</span><span class="val">${esc(fmtV(v))}</span><span class="pct">${pct(total ? v / total : 0)}</span>
+      <span class="bar" aria-hidden="true"><i style="width:${Math.max(1, total ? (v / total) * 100 : 0).toFixed(1)}%"></i></span></button>${open ? modelDetailHtml(rep, m) : ''}</li>`;
+  }).join('');
+  let more = '';
+  if (rest.length && !state.modelsAll) {
+    const rv = rest.reduce((s, m) => s + modelVal(m), 0);
+    more = `<li><button type="button" class="mrow more" data-act="models-more" data-fk="models-more" aria-expanded="false"><span class="n">${rest.length} more model${rest.length === 1 ? '' : 's'}</span><span class="val">${esc(fmtV(rv))}</span><span class="pct">${pct(total ? rv / total : 0)}</span></button></li>`;
+  } else if (state.modelsAll && list.length > top) {
+    more = `<li><button type="button" class="mrow more" data-act="models-more" data-fk="models-more" aria-expanded="true"><span class="n">Show the top ${top} only</span><span></span><span></span></button></li>`;
+  }
+  return head(`${list.length} used`) + `<ul class="mlist">${rows || '<li class="note-row">No models in this range.</li>'}${more}</ul>`;
 }
 
-// The management-key form shared by the setup screen and Settings > Connection.
-function keyFormHtml() {
+function modelDetailHtml(rep, m) {
+  let delta = '—';
+  if (m.previousCost != null) delta = m.previousCost < 0.005 ? (m.cost > 0 ? 'new' : '—') : `${m.cost >= m.previousCost ? '↑' : '↓'} ${Math.abs(Math.round((m.cost / m.previousCost - 1) * 100))}%`;
+  const tok = m.prompt + m.completion;
+  const cells = [
+    ['Requests', groupInt(Math.round(m.requests))],
+    ['Per request', m.requests > 0 ? money(m.cost / m.requests) : '—'],
+    ['vs previous', delta],
+    ['Tokens in / out', tok > 0 ? compact(m.prompt) + ' / ' + compact(m.completion) : '—'],
+    ['Cache hit', m.prompt > 0 ? pct(m.cached / m.prompt) : '—'],
+    ['Per 1M tokens', m.costPerMTok == null ? '—' : money(m.costPerMTok)]
+  ];
+  return `<div class="mdetail"><div class="kv">${cells.map(([k, v]) => `<div><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`).join('')}</div>${tok === 0 ? '<p class="note-row" style="padding-bottom:0">No token counts: this model is billed another way, such as per minute of audio.</p>' : ''}</div>`;
+}
+
+function mixHtml(rep) {
+  const f = focusRange();
+  const head = (side) => `<div class="sec-h"><h2 id="h-mix">Token mix <span class="scope">· ${esc(scopeLabel(rep))}</span></h2><span class="side">${side}</span></div>`;
+  let x = rep.mix;
+  if (f) {
+    const a = aggregate(rep, f);
+    if (a.todayOnly) return head('') + '<p class="note-row">Token counts for today arrive after the UTC day ends.</p>';
+    x = a.mix;
+  }
+  const prompt = x.cachedPrompt + x.uncachedPrompt;
+  if (prompt + x.completion === 0) return head('') + `<p class="note-row">No tokens ${f ? 'on this day' : 'in this range'}.</p>`;
+  const ratio = x.completion > 0 ? prompt / x.completion : null;
+  const cell = (k, v, s) => `<div><div class="k">${k}</div><div class="v">${esc(compact(v))}</div><div class="s">${esc(s)}</div></div>`;
+  return head(compact(prompt + x.completion) + ' tokens') + `<div class="quad-top">${prompt > 0 ? `<span><b>${pct(x.cachedPrompt / prompt)}</b> cache hit</span>` : ''}${ratio != null ? `<span>·</span><span><b>${ratio >= 10 ? Math.round(ratio) : ratio.toFixed(1)}:1</b> prompt to output</span>` : ''}</div>
+    <div class="quad">
+      ${cell('Cached prompt', x.cachedPrompt, prompt ? pct(x.cachedPrompt / prompt) + ' of prompt' : '')}
+      ${cell('Uncached prompt', x.uncachedPrompt, prompt ? pct(x.uncachedPrompt / prompt) + ' of prompt' : '')}
+      ${cell('Completion', x.completion, x.reasoning > 0 ? 'includes reasoning' : 'output tokens')}
+      ${cell('Reasoning', x.reasoning, x.completion ? pct(x.reasoning / x.completion) + ' of completion' : '')}
+    </div>`;
+}
+
+function usageHtml(rep) {
+  const seg = (list, cur, act, label) => `<div class="seg sm" role="radiogroup" aria-label="${label}">${list.map(([v, l]) => `<button type="button" role="radio" aria-checked="${cur === v}" tabindex="${cur === v ? 0 : -1}" data-act="${act}" data-val="${v}" data-fk="${act}:${v}">${l}</button>`).join('')}</div>`;
+  return `${todayMonthHtml(rep)}
+    <section aria-labelledby="h-spend">
+      <div class="sec-h"><h2 id="h-spend">${TOK() ? 'Tokens' : 'Spend'}</h2><div class="ctl">${seg(RANGES, state.range, 'range', 'Range')}${seg(MEASURES, state.measure, 'measure', 'Measure')}</div></div>
+      <div id="u-readout">${readoutHtml(rep)}</div>
+      <svg class="chart${state.model ? ' sel' : ''}" role="group" aria-label="${TOK() ? 'Daily tokens' : 'Daily spend'}. Arrow keys move, Enter selects a day."></svg>
+    </section>
+    <section aria-labelledby="h-models" id="u-models">${modelsHtml(rep)}</section>
+    <section aria-labelledby="h-mix" id="u-mix">${mixHtml(rep)}</section>
+    <section aria-labelledby="h-heat">
+      <div class="sec-h"><h2 id="h-heat">Activity <span class="scope">· 26 weeks</span></h2><span class="side" id="heat-ro" aria-live="polite"></span></div>
+      <svg class="heat" role="grid" aria-label="Daily ${TOK() ? 'tokens' : 'spend'} for 26 weeks. Arrow keys move, Enter selects a day."></svg>
+      <div class="heat-foot"><span class="scale" aria-hidden="true">Less <i style="background:var(--h0)"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i> More</span><span>Click a day to select it</span></div>
+    </section>`;
+}
+
+/* ---------- chart and heatmap (drawn after layout, at the real width) ---------- */
+
+function drawChart() {
+  const rep = state.report;
+  const svg = $('#app .chart');
+  if (!svg || !rep) return;
+  const bs = buckets(rep);
+  const W = Math.max(200, Math.round(svg.getBoundingClientRect().width)), H = 132;
+  const L = TOK() ? 34 : 34, R = 4, T = 8, B = 18;
+  if (!bs.length) { svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.innerHTML = `<text class="tick" x="${W / 2}" y="${H / 2}" text-anchor="middle">No activity yet</text>`; return; }
+  const maxV = Math.max(1e-9, ...bs.map((b) => b.total));
+  const step = niceStep(maxV), top = Math.ceil(maxV / step - 1e-9) * step;
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  const band = (W - L - R) / bs.length;
+  const bw = Math.min(16, Math.max(2, band * 0.72)), rad = Math.min(3, bw / 2);
+  const f = focusRange();
+  const tickLbl = (v) => (TOK() ? compact(v) : '$' + (step < 1 ? v.toFixed(step < 0.1 ? 2 : 1) : groupInt(Math.round(v))));
+  let g = '';
+  for (let v = 0; v <= top + step * 1e-6; v += step) g += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text class="tick" x="${L - 6}" y="${(y(v) + 3).toFixed(1)}" text-anchor="end">${tickLbl(v)}</text>`;
+  const barPath = (x, y0, y1) => { const h = y0 - y1; if (h <= 0.5) return `M${x},${y0}h${bw}v-0.5h-${bw}Z`; const r = Math.min(rad, h); return `M${x},${y0}V${y1 + r}Q${x},${y1} ${x + r},${y1}H${x + bw - r}Q${x + bw},${y1} ${x + bw},${y1 + r}V${y0}Z`; };
+  const fi = f ? bs.findIndex((b) => f.from >= b.from && f.from <= b.to) : -1;
+  const tabI = fi >= 0 ? fi : bs.length - 1;
+  let cols = '';
+  bs.forEach((b, i) => {
+    const x = L + band * i + (band - bw) / 2, base = y(0);
+    let marks = `<path class="${b.partial && !b.week ? 'b-today' : 'b-total'}" d="${barPath(x, base, y(b.total))}"/>`;
+    if (state.model) { const mv = b.byModel[state.model] || 0; if (mv > 0) marks += `<path class="b-model" d="${barPath(x, base, y(mv))}"/>`; }
+    const lab = `${b.week ? 'Week of ' + dShort(b.from) : dLong(b.from)}: ${fmtV(b.total)}${b.partial ? ' so far' : ''}`;
+    cols += `<g class="col${fi >= 0 && fi !== i ? ' dim' : ''}" data-b="${i}">${marks}<rect class="hit" x="${(L + band * i).toFixed(1)}" y="${T}" width="${band.toFixed(1)}" height="${H - T}" tabindex="${i === tabI ? 0 : -1}" role="img" aria-label="${esc(lab)}" data-fk="bar:${i}"/></g>`;
+  });
+  // The 7-day burn behind "days left", drawn only over the days it averages.
+  let ref = '';
+  const burn = rep.balance.burnPerDay;
+  if (!TOK() && !state.model && rep.range !== 'all' && burn) {
+    const last7 = bs.map((b, i) => (!b.partial ? i : -1)).filter((i) => i >= 0).slice(-7);
+    if (last7.length) {
+      const xa = L + band * last7[0] + (band - bw) / 2, xb = L + band * last7[last7.length - 1] + (band + bw) / 2, yy = Math.max(T + 2, y(Math.min(burn, top)));
+      const lbl = money(burn) + '/day';
+      ref = `<line class="ref" x1="${xa.toFixed(1)}" x2="${xb.toFixed(1)}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"/>`;
+      ref += xa - L > 64
+        ? `<text class="ref-l" x="${(xa - 4).toFixed(1)}" y="${(yy + 3.5).toFixed(1)}" text-anchor="end" paint-order="stroke" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round">${lbl}</text>`
+        : `<text class="ref-l" x="${xa.toFixed(1)}" y="${(yy - 5).toFixed(1)}" text-anchor="start" paint-order="stroke" stroke="var(--bg)" stroke-width="4" stroke-linejoin="round">${lbl}</text>`;
+    }
+  }
+  const xl = (i, anchor) => `<text class="tick" x="${(L + band * i + band / 2).toFixed(1)}" y="${H - 4}" text-anchor="${anchor}">${bs[i].partial ? (bs[i].week ? 'This week' : 'Today') : dShort(bs[i].from)}</text>`;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = g + cols + ref + xl(0, 'start') + (bs.length > 2 ? xl(Math.floor((bs.length - 1) / 2), 'middle') : '') + (bs.length > 1 ? xl(bs.length - 1, 'end') : '');
+}
+
+function heatDays(rep) {
+  const today = utcToday();
+  const by = new Map(rep.heatmap.map((h) => [h.date, h]));
+  const out = [];
+  for (let i = HEAT_DAYS - 1; i >= 0; i--) {
+    const d = addDays(today, -i);
+    const h = by.get(d);
+    const v = d === today ? (TOK() ? null : rep.tiles.today) : h ? (TOK() ? h.tokens || 0 : h.cost) : 0;
+    out.push({ date: d, v, today: d === today });
+  }
+  return out;
+}
+
+function drawHeat() {
+  const rep = state.report;
+  const svg = $('#app .heat');
+  if (!svg || !rep) return;
+  const days = heatDays(rep);
+  const W = Math.max(200, Math.round(svg.getBoundingClientRect().width));
+  const off = (weekday(days[0].date) + 6) % 7, cols = Math.floor((days.length - 1 + off) / 7) + 1;
+  const LW = 24, TOPH = 14, cell = (W - LW) / cols, sz = Math.max(4, cell - 2.2), H = TOPH + 7 * cell;
+  const nz = days.map((d) => d.v).filter((v) => v > 0).sort((a, b) => a - b);
+  const q = [0.25, 0.5, 0.8].map((p) => nz[Math.floor(p * (nz.length - 1))]);
+  const lvl = (v) => (v == null || v <= 0 ? 0 : v <= q[0] ? 1 : v <= q[1] ? 2 : v <= q[2] ? 3 : 4);
+  const pinned = state.pin && state.pin.from === state.pin.to ? state.pin.from : null;
+  const focusD = pinned || state.heatFocus || days[days.length - 1].date;
+  let s = '';
+  ['Mon', '', 'Wed', '', 'Fri', '', ''].forEach((l, r) => { if (l) s += `<text class="tick" x="0" y="${(TOPH + r * cell + sz - 1).toFixed(1)}">${l}</text>`; });
+  let lastMo = -1;
+  for (let c = 0; c < cols; c++) {
+    const di = c * 7 - off;
+    if (di < 0) continue;
+    const d = days[di].date, mo = +d.slice(5, 7) - 1;
+    if (mo !== lastMo && +d.slice(8, 10) <= 7 && c < cols - 2) { s += `<text class="tick" x="${(LW + c * cell).toFixed(1)}" y="10">${MONTHS[mo]}</text>`; lastMo = mo; }
+  }
+  days.forEach((d, i) => {
+    const k = i + off, c = Math.floor(k / 7), r = k % 7;
+    const cls = 'cell' + (d.today ? ' today' : '') + (pinned === d.date ? ' pinned' : '');
+    const lab = dLong(d.date) + ': ' + (d.v == null ? 'tokens pending' : d.v > 0 ? fmtV(d.v) : 'no usage');
+    s += `<rect class="${cls}" data-d="${d.date}" x="${(LW + c * cell).toFixed(1)}" y="${(TOPH + r * cell).toFixed(1)}" width="${sz.toFixed(1)}" height="${sz.toFixed(1)}" rx="2" fill="var(--h${lvl(d.v)})" tabindex="${d.date === focusD ? 0 : -1}" role="gridcell" aria-label="${esc(lab)}" data-fk="cell:${d.date}"/>`;
+  });
+  svg.setAttribute('viewBox', `0 0 ${W} ${H.toFixed(1)}`);
+  svg.style.height = H.toFixed(1) + 'px';
+  svg.innerHTML = s;
+  heatReadout(null);
+}
+
+function heatReadout(date) {
+  const el = $('#heat-ro');
+  const rep = state.report;
+  if (!el || !rep) return;
+  const days = heatDays(rep);
+  if (!date) {
+    const tot = days.reduce((a, d) => a + (d.v || 0), 0);
+    el.textContent = (TOK() ? compact(tot) + ' tokens' : money(tot)) + ' in total';
+    return;
+  }
+  const d = days.find((x) => x.date === date);
+  if (d) el.textContent = dLong(d.date) + ' · ' + (d.v == null ? 'tokens pending' : d.v > 0 ? fmtV(d.v) : 'no usage');
+}
+
+// Hovering or selecting a day re-draws only what depends on it.
+function updateFocus() {
+  const rep = state.report;
+  if (!rep || state.tab !== 'usage') return;
+  const ro = $('#u-readout'), mo = $('#u-models'), mx = $('#u-mix');
+  if (ro) ro.innerHTML = readoutHtml(rep);
+  if (mo) mo.innerHTML = modelsHtml(rep);
+  if (mx) mx.innerHTML = mixHtml(rep);
+  const f = focusRange();
+  const bs = buckets(rep);
+  const fi = f ? bs.findIndex((b) => f.from >= b.from && f.from <= b.to) : -1;
+  document.querySelectorAll('#app .chart .col').forEach((g) => g.classList.toggle('dim', fi >= 0 && +g.dataset.b !== fi));
+}
+
+function pinRange(r) {
+  const same = state.pin && r && state.pin.from === r.from && state.pin.to === r.to;
+  state.pin = same ? null : r;
+  state.hover = null;
+  state.modelsAll = false;
+  if (state.pin) state.model = null;
+  render();
+}
+
+function pinDate(date) {
+  const rep = state.report;
+  if (!rep) return;
+  const today = utcToday();
+  const inRange = rep.daily.some((d) => d.date === date);
+  if (inRange) { state.heatFocus = date; pinRange({ from: date, to: date }); return; }
+  // Outside the current range: widen it, then select the day once the report is in.
+  const range = date >= addDays(today, -30) ? '30d' : 'all';
+  if (range === state.range) return;
+  state.range = range;
+  state.pendingPin = date;
+  state.heatFocus = date;
+  savePrefs();
+  loadReport();
+}
+
+/* ---------- rendering: keys ---------- */
+
+function keysHtml(rep) {
+  const r = state.keysRange;
+  const all = rep.keys || [];
+  const expired = (k) => k.health && k.health.expiry === 'expired';
+  const isInactive = (k) => k.disabled || expired(k) || (!k.lastUsedAt && !(keySpend(k, 'all') > 0));
+  const active = all.filter((k) => !isInactive(k)).sort((a, b) => (keySpend(b, r) ?? -1) - (keySpend(a, r) ?? -1));
+  const inactive = all.filter(isInactive);
+  const total = active.reduce((s, k) => s + (keySpend(k, r) || 0), 0);
+  const seg = `<div class="seg sm" role="radiogroup" aria-label="Key spend range">${RANGES.map(([v, l]) => `<button type="button" role="radio" aria-checked="${r === v}" tabindex="${r === v ? 0 : -1}" data-act="krange" data-val="${v}" data-fk="krange:${v}">${l}</button>`).join('')}</div>`;
+  const badges = (k) => {
+    const h = k.health || {};
+    const b = [];
+    if (k.disabled) b.push(['neutral', 'Disabled']);
+    if (h.expiry === 'expired') b.push(['danger', 'Expired']);
+    else if (h.expiry === 'expiring' && k.expiresAt) b.push(['warn', 'Expires ' + dShort(k.expiresAt.slice(0, 10))]);
+    if (h.limit === 'exhausted') b.push(['danger', 'Limit reached']);
+    else if (h.limit === 'near') b.push(['warn', 'Near limit']);
+    return b.map(([t, l]) => `<span class="badge ${t}">${esc(l)}</span>`).join('');
+  };
+  const row = (k, quiet) => {
+    const s = keySpend(k, r);
+    const h = k.health || {};
+    const used = h.usedFraction;
+    const meta = [k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used', k.name && k.label ? k.label : ''].filter(Boolean).join(' · ');
+    const limit = k.limit != null && !quiet ? `<div class="kmeter"><div class="meter" role="meter" aria-label="${esc(keyName(k))} limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round((used || 0) * 100)}"><i class="now${h.limit ? ' warn' : ''}" style="width:${((used || 0) * 100).toFixed(1)}%"></i></div>
+      <div class="k2"><span>${pct(used || 0)} of ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit</span><span>${k.limitRemaining != null ? esc(money(Math.max(0, k.limitRemaining))) + ' left' : ''}${k.limitReset ? ' · resets ' + RESET[k.limitReset] : ''}</span></div></div>` : '';
+    return `<li class="krow"><div class="k1"><span class="n"${quiet ? ' style="color:var(--fg-2)"' : ''} title="${esc(keyName(k))}">${esc(keyName(k))}</span>${badges(k)}<span class="v"${s == null ? ' title="Still loading this key\'s activity"' : ''}>${s == null ? '—' : esc(money(s))}</span></div><div class="k2"><span>${esc(meta)}</span></div>${limit}</li>`;
+  };
+  const scope = r === 'all' ? 'all time' : 'last ' + RANGE_DAYS[r] + ' days';
+  return `<section aria-labelledby="h-keys">
+    <div class="sec-h"><h2 id="h-keys">API keys <span class="scope">· ${scope}</span></h2><div class="ctl">${seg}</div></div>
+    ${active.length || inactive.length ? '' : '<p class="note-row">No API keys on this account yet.</p>'}
+    ${active.length ? `<ul class="klist">${active.map((k) => row(k, false)).join('')}</ul><p class="fine" style="margin-top:6px">${active.length} active key${active.length === 1 ? '' : 's'} · ${esc(money(total))} in total</p>` : ''}
+    ${inactive.length ? `<button type="button" class="inactive" data-act="inactive" data-fk="inactive" aria-expanded="${state.inactiveOpen}"><span>${inactive.length} inactive key${inactive.length === 1 ? '' : 's'}</span><span class="muted">${state.inactiveOpen ? 'Hide' : 'Show'}</span></button>
+      ${state.inactiveOpen ? `<ul class="klist">${inactive.map((k) => row(k, true)).join('')}</ul>` : ''}` : ''}
+  </section>`;
+}
+
+/* ---------- rendering: settings ---------- */
+
+function keyFormHtml(primaryLabel) {
   const m = state.keyMsg;
   return `<div class="keyform">
-    <label class="field" for="mgmt"><span>Management key</span><input id="mgmt" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" data-fk="mgmt"></label>
-    <div class="row-actions">
-      <button type="button" class="btn primary" id="save-keys" data-act="save-keys" data-fk="save-keys">Verify &amp; save</button>
-      <button type="button" class="link" data-act="open-keys" data-fk="open-keys">Create a management key</button>
-    </div>
-    <p id="key-msg" class="small${m ? (m.ok ? ' ok' : ' err-line') : ''}"${m && !m.ok ? ' role="alert"' : ' role="status"'}>${m ? esc(m.text) : ''}</p>
+    <label class="sr-only" for="mgmt">Management key</label>
+    <input id="mgmt" type="password" placeholder="Paste a management key" autocomplete="off" autocapitalize="off" spellcheck="false" data-fk="mgmt">
+    <div class="acts"><button type="button" class="btn primary" id="save-keys" data-act="save-keys" data-fk="save-keys">${primaryLabel || 'Verify &amp; save'}</button><button type="button" class="link" data-act="open-keys" data-fk="open-keys">Create a management key ${ICON.ext}</button></div>
+    <p id="key-msg" class="msg${m ? (m.ok ? ' ok-t' : ' err-t') : ''}"${m && !m.ok ? ' role="alert"' : ' role="status"'}>${m ? esc(m.text) : ''}</p>
   </div>`;
-}
-
-function setupHtml() {
-  return `<section class="card setup" aria-labelledby="h-setup">
-    <h2 id="h-setup">Connect your OpenRouter account</h2>
-    <p class="muted">A <strong>management key</strong> is required to read your credits, activity and keys.</p>
-    <p class="muted small">Keys are verified once, then stored encrypted by Orca. This panel never keeps them.</p>
-    ${keyFormHtml()}
-  </section>`;
-}
-
-function tile(label, value, sub, tipText) {
-  const tip = tipText ? ` tabindex="0" data-tip="${addTip(`<b>${esc(label)}</b><div class="note">${esc(tipText)}</div>`)}"` : '';
-  return `<div class="tile${tipText ? ' tile-cache' : ''}"${tip}><span class="label">${esc(label)}</span><span class="value">${esc(value)}</span><span class="sub">${esc(sub)}</span></div>`;
-}
-
-function spendChange(current, previous) {
-  if (previous === 0) return current > 0 ? 'New spend' : 'No change';
-  const change = (current - previous) / previous * 100;
-  return Math.abs(change) < 0.05 ? 'No change' : `${change > 0 ? 'Up' : 'Down'} ${Math.abs(change).toFixed(1)}%`;
-}
-
-function comparisonHtml(rep) {
-  if (rep.range === 'all') return '';
-  const c = rep.comparison;
-  return `<p class="muted small" data-comparison>${c
-    ? `${esc(spendChange(c.current, c.previous))} vs previous ${c.days} days · ${esc(money(c.previous))} → ${esc(money(c.current))} · completed UTC days`
-    : `Collecting history · ${rep.range === '7d' ? 14 : 60} days needed to compare equal periods`}</p>`;
-}
-
-function monthlyBudgetHtml(rep) {
-  const limit = rep.monthlyBudgetUsd;
-  if (!(limit > 0)) return '';
-  const spent = rep.tiles.monthToDate, projected = rep.tiles.monthProjected;
-  const used = spent / limit * 100;
-  const over = spent > limit || projected != null && projected > limit;
-  const message = spent > limit ? 'Over budget' : over ? 'Projected over budget' : 'Within budget';
-  return `<section class="card" aria-labelledby="h-month-budget">
-    <div class="card-h"><h2 id="h-month-budget">Monthly budget</h2><span class="small${over ? ' err' : ' muted'}">${message}</span></div>
-    <p>${esc(money(spent))} of ${esc(money(limit))} · ${used.toFixed(0)}% used</p>
-    <div class="kmeter ${over ? 'warn' : ''}" role="progressbar" aria-label="Monthly budget used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(Math.min(100, Math.max(0, used)))}" aria-valuetext="${esc(money(spent))} of ${esc(money(limit))}"><i style="width:${Math.min(100, Math.max(0, used)).toFixed(1)}%"></i></div>
-    <p class="muted small">${projected == null ? 'Not enough recent activity for a projection.' : `≈ ${esc(money(projected))} by month end.`} UTC month. Alerts only; usage is never blocked.</p>
-  </section>`;
-}
-
-function tilesHtml(rep) {
-  const t = rep.tiles;
-  const rl = { '7d': 'Last 7 days', '30d': 'Last 30 days', all: 'All time' }[rep.range] || '';
-  return `<div class="tiles">${[
-    tile('Spend', money(t.spend), rl),
-    tile('Tokens in / out', compact(t.tokensIn) + ' / ' + compact(t.tokensOut), 'prompt / completion'),
-    tile('Requests', groupInt(Math.round(t.requests)), rl),
-    tile('Avg cost / request', t.avgCostPerRequest == null ? '—' : money(t.avgCostPerRequest), 'spend / requests'),
-    tile('Cache hit rate', pct(t.cacheHitRate), 'of prompt tokens', 'Share of prompt tokens served from the provider cache.'),
-    tile('This month', money(t.monthToDate), t.monthProjected == null ? 'so far, UTC month' : '≈ ' + money(t.monthProjected) + ' by month end', 'Spend so far this UTC month, including today, and where it lands at your recent daily rate.')
-  ].join('')}</div>`;
-}
-
-const TIP_MODELS = 10;
-
-/* Day tooltip: every model that day, largest first. Models outside the chart's top 5 keep the grey "other" swatch so they
-   still match the bar. Today has no per-model data yet, so it stays one unsplit row. */
-function dayTip(d, meas) {
-  const row = (swatch, label, v, title) => `<div class="row"><span${title ? ` title="${esc(title)}"` : ''}><i class="sw" style="background:${colorOf(swatch)}"></i>${esc(label)}</span><span>${esc(fmt(v, meas))}</span></div>`;
-  let rows;
-  if (d.partial) {
-    rows = d.total > 0 ? row('other', 'All models (not split yet)', d.total) : '';
-  } else {
-    const all = [
-      ...Object.entries(d.byModel).filter(([k]) => k !== 'other').map(([k, v]) => [k, v, k]),
-      ...Object.entries(d.otherModels || {}).map(([k, v]) => [k, v, 'other']),
-    ].filter((e) => e[1] > 0).sort((a, b) => b[1] - a[1]);
-    rows = all.slice(0, TIP_MODELS).map(([m, v, sw]) => row(sw, shortModel(m), v, m)).join('');
-    const rest = all.slice(TIP_MODELS);
-    if (rest.length) rows += `<div class="row more"><span>${rest.length} more model${rest.length === 1 ? '' : 's'}</span><span>${esc(fmt(rest.reduce((a, e) => a + e[1], 0), meas))}</span></div>`;
-  }
-  rows = rows || '<div class="row"><span>No activity</span><span>—</span></div>';
-  return `<b>${esc(dayLong(d.date))}${d.partial ? ' · so far' : ''}</b>${rows}<hr><div class="row"><span>Total</span><span>${esc(fmt(d.total, meas))}</span></div>${d.partial ? '<div class="note">Partial: today so far, built from key totals rather than per-request activity. Updates on refresh.</div>' : ''}`;
-}
-
-function dailySvg(rep, W) {
-  const days = rep.daily;
-  const n = days.length;
-  const meas = rep.measure;
-  const H = 196, L = 52, R = 8, T = 14, B = 24;
-  const iw = W - L - R, ih = H - T - B;
-  // Round tick values (1, 2, 5 x 10^k) with about four gridlines.
-  const dataMax = Math.max(0, ...days.map((d) => d.total));
-  const tickStep = dataMax > 0 ? niceStep(dataMax / 4) : 0.25;
-  const ticks = Math.max(2, Math.ceil(dataMax / tickStep - 1e-9));
-  const max = tickStep * ticks;
-  const band = iw / Math.max(1, n);
-  const bw = Math.max(2, Math.min(22, band * 0.68));
-  const step = Math.max(1, Math.ceil(n / 5));
-  const keys = legendKeys(days);
-  const bottom = T + ih;
-  const Y = (v) => bottom - (v / max) * ih;
-  let grid = '';
-  for (let i = 0; i <= ticks; i++) {
-    const v = tickStep * i;
-    const y = Y(v).toFixed(1);
-    grid += `<line class="grid" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text class="ylab" x="${L - 8}" y="${(+y + 3.5).toFixed(1)}" text-anchor="end">${esc(axisFmt(v, meas))}</text>`;
-  }
-  let bars = '', labels = '';
-  days.forEach((d, i) => {
-    const cx = L + band * i + band / 2;
-    const x = cx - bw / 2;
-    const top = Y(d.total);
-    const r = Math.max(0, Math.min(4, bw / 2, bottom - top));
-    // One outline for the whole stack, rounded only at the top; segments are clipped to it.
-    const shape = `M${x.toFixed(1)} ${bottom} V${(top + r).toFixed(1)} Q${x.toFixed(1)} ${top.toFixed(1)} ${(x + r).toFixed(1)} ${top.toFixed(1)} H${(x + bw - r).toFixed(1)} Q${(x + bw).toFixed(1)} ${top.toFixed(1)} ${(x + bw).toFixed(1)} ${(top + r).toFixed(1)} V${bottom} Z`;
-    const cid = 'dc' + i;
-    const partialBar = d.partial && d.total > 0;
-    let segs = '';
-    let base = bottom;
-    for (const k of keys) {
-      const v = d.byModel[k] || 0;
-      if (v <= 0) continue;
-      const h = (v / max) * ih;
-      base -= h;
-      segs += `<rect class="seg-rect" x="${x.toFixed(1)}" y="${base.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.5, h).toFixed(1)}" style="fill:${colorOf(k)}"${d.partial ? ' opacity=".5"' : ''}/>`;
-    }
-    if (partialBar) segs += `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${bw.toFixed(1)}" height="${(bottom - top).toFixed(1)}" fill="url(#hatch)"/>`;
-    const label = dayLabel(d.date) + ': ' + fmt(d.total, meas) + (d.partial ? ' (so far)' : '');
-    bars += `<g class="col" tabindex="0" role="img" aria-label="${esc(label)}" data-tip="${addTip(dayTip(d, meas))}"><rect class="hit" x="${(L + band * i).toFixed(1)}" y="${T}" width="${band.toFixed(1)}" height="${ih}"/><clipPath id="${cid}"><path d="${shape}"/></clipPath><g clip-path="url(#${cid})">${segs}</g>${partialBar ? `<path class="partial-outline" d="${shape}"/>` : ''}</g>`;
-    if ((n - 1 - i) % step === 0) labels += `<text x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(dayLabel(d.date))}</text>`;
-  });
-  const done = days.filter((d) => !d.partial);
-  let avgLine = '';
-  if (done.length) {
-    const avg = done.reduce((a, d) => a + d.total, 0) / done.length;
-    const y = Y(avg).toFixed(1);
-    avgLine = `<line class="avg" x1="${L}" x2="${W - R}" y1="${y}" y2="${y}"/><text class="avg-lab" x="${W - R}" y="${(+y - 5).toFixed(1)}" text-anchor="end">avg ${esc(fmtMeas(avg, meas))}</text>`;
-  }
-  return `<svg class="chart dchart" viewBox="0 0 ${W} ${H}" role="group" aria-label="Daily ${meas} for ${n} days">
-    <defs><pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="none"/><line x1="0" y1="0" x2="0" y2="5" style="stroke:var(--card)" stroke-width="2"/></pattern></defs>
-    ${grid}${bars}${avgLine}${labels}</svg>`;
-}
-
-function dailyCard(rep) {
-  const items = legendKeys(rep.daily).map((k) => `<li title="${esc(k === 'other' ? 'Other' : k)}"><i class="sw" style="background:${colorOf(k)}" aria-hidden="true"></i><span>${esc(legendName(k))}</span></li>`).join('');
-  return `<section class="card" aria-labelledby="h-daily">
-    <div class="card-h"><h2 id="h-daily">Daily ${rep.measure === 'tokens' ? 'tokens' : 'spend'}</h2></div>
-    ${items ? `<ul class="legend" aria-label="Models (top 5 plus other)">${items}</ul>` : ''}
-    ${dailySvg(rep, chartW())}
-  </section>`;
-}
-
-function intradayCard(rep) {
-  const pts = rep.intraday;
-  const W = chartW();
-  const H = 120, L = 56, R = 10, T = 10, B = 22;
-  const iw = W - L - R, ih = H - T - B;
-  const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
-  let lo = Math.min(...pts.map((p) => p.remaining));
-  let hi = Math.max(...pts.map((p) => p.remaining));
-  const pad = (hi - lo) * 0.15 || Math.max(0.01, hi * 0.02);
-  lo -= pad; hi += pad;
-  const X = (t) => L + ((t - t0) / (t1 - t0 || 1)) * iw;
-  const Y = (v) => T + (1 - (v - lo) / (hi - lo || 1)) * ih;
-  const path = pts.map((p, i) => `${i ? 'L' : 'M'}${X(p.t).toFixed(1)} ${Y(p.remaining).toFixed(1)}`).join(' ');
-  const area = `${path} L${X(t1).toFixed(1)} ${T + ih} L${X(t0).toFixed(1)} ${T + ih} Z`;
-  const tm = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const dots = pts.map((p) => {
-    const tip = addTip(`<b>${esc(tm(p.t))}</b><div class="row"><span>Credits left</span><span>${esc(money(p.remaining))}</span></div>`);
-    return `<circle class="dot" cx="${X(p.t).toFixed(1)}" cy="${Y(p.remaining).toFixed(1)}" r="3.5" tabindex="0" data-tip="${tip}" aria-label="${esc(tm(p.t) + ': ' + money(p.remaining))}"/>`;
-  }).join('');
-  const last = pts[pts.length - 1];
-  return `<section class="card" aria-labelledby="h-intra">
-    <div class="card-h"><h2 id="h-intra">Credits today</h2><span class="muted small">Now ${esc(money(last.remaining))}</span></div>
-    <svg class="chart" viewBox="0 0 ${W} ${H}" role="group" aria-label="Credits left through today, ${pts.length} points">
-      <line class="grid" x1="${L}" x2="${W - R}" y1="${T}" y2="${T}"/>
-      <line class="grid" x1="${L}" x2="${W - R}" y1="${T + ih}" y2="${T + ih}"/>
-      <text x="${L - 6}" y="${T + 4}" text-anchor="end">${esc(money(hi - pad))}</text>
-      <text x="${L - 6}" y="${T + ih}" text-anchor="end">${esc(money(lo + pad))}</text>
-      <path class="area" d="${area}"/>
-      <path class="line" d="${path}"/>
-      ${dots}
-      <text x="${L}" y="${H - 4}">${esc(tm(t0))}</text>
-      <text x="${W - R}" y="${H - 4}" text-anchor="end">${esc(tm(t1))}</text>
-    </svg>
-  </section>`;
-}
-
-const MODELS_TOP = 8;
-const CHEV = '<svg class="mr-chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
-const modelVal = (it, meas) => (meas === 'tokens' ? it.prompt + it.completion : it.cost);
-
-function modelsCard(rep) {
-  const meas = rep.measure;
-  const items = rep.models;
-  const n = items.length;
-  const total = items.reduce((a, it) => a + modelVal(it, meas), 0);
-  const max = Math.max(1e-9, ...items.map((it) => modelVal(it, meas)));
-  const top = items.slice(0, MODELS_TOP);
-  const restV = total - top.reduce((a, it) => a + modelVal(it, meas), 0);
-  let bar = top.map((it) => `<i style="flex-grow:${Math.max(0, modelVal(it, meas))};background:${colorOf(it.name)}"></i>`).join('');
-  if (n > MODELS_TOP && restV > 0) bar += `<i style="flex-grow:${restV};background:var(--m-other)"></i>`;
-  const shown = state.modelsAll ? items : top;
-  const rows = shown.map((it) => {
-    const v = modelVal(it, meas);
-    const color = colorOf(it.name);
-    const share = total > 0 ? pct(v / total) : '—';
-    const label = `${it.name}: ${fmt(v, meas)}, ${share} of total`;
-    return `<li><button type="button" class="mrow" data-act="model-open" data-val="${esc(it.name)}" data-fk="model:${esc(it.name)}" aria-haspopup="dialog" aria-label="${esc(label)}" title="${esc(it.name)}">
-        <span class="mr-top"><i class="sw" style="background:${color}" aria-hidden="true"></i><span class="mr-name">${esc(shortModel(it.name))}</span><span class="mr-val">${esc(fmtMeas(v, meas))}</span><span class="mr-pct">${esc(share)}</span>${CHEV}</span>
-        <span class="mr-bar" aria-hidden="true"><i style="width:${Math.max(0, (v / max) * 100).toFixed(1)}%;background:${color}"></i></span>
-        ${it.previousCost == null ? '' : `<span class="muted small">Spend: ${esc(spendChange(it.cost, it.previousCost))} vs previous ${rep.comparison.days} days</span>`}
-      </button></li>`;
-  }).join('');
-  const more = n > MODELS_TOP
-    ? `<button type="button" class="btn ghost mlist-more" data-act="models-more" data-fk="models-more" aria-expanded="${state.modelsAll}">${state.modelsAll ? 'Show less' : 'Show ' + (n - MODELS_TOP) + ' more'}</button>`
-    : '';
-  return `<section class="card" aria-labelledby="h-models">
-    <div class="card-h"><h2 id="h-models">Models</h2><span class="muted small">${esc(fmt(total, meas))} across ${n} model${n === 1 ? '' : 's'}</span></div>
-    ${n ? `<div class="sharebar" role="img" aria-label="Share of ${esc(fmt(total, meas))} by model">${bar}</div><ul class="mlist">${rows}</ul>${more}` : '<p class="muted">No models in this range.</p>'}
-  </section>`;
-}
-
-/* Newest-first list of days with spend, like a ledger: date, a bar, the amount. */
-function ledgerCard(rep) {
-  const meas = rep.measure;
-  const days = rep.daily.filter((d) => d.total > 0).slice().reverse();
-  if (!days.length) return '<section class="card" aria-labelledby="h-ledger"><div class="card-h"><h2 id="h-ledger">Daily ledger</h2></div><p class="muted">No days with activity in this range.</p></section>';
-  const max = Math.max(...days.map((d) => d.total));
-  const done = days.filter((d) => !d.partial);
-  const sum = done.reduce((a, d) => a + d.total, 0);
-  const avg = done.length ? sum / done.length : 0;
-  const peak = done.reduce((a, d) => (a == null || d.total > a.total ? d : a), null);
-  const summary = `<p class="muted small lg-sum">${done.length} active day${done.length === 1 ? '' : 's'} · avg ${esc(fmtMeas(avg, meas))}/day${peak ? ` · peak ${esc(dayLabel(peak.date))} (${esc(fmtMeas(peak.total, meas))})` : ''}</p>`;
-  const rows = days.map((d) => `<li class="lg-row${d.partial ? ' partial' : ''}" tabindex="0" aria-label="${esc(dayLabel(d.date) + ': ' + fmtMeas(d.total, meas) + (d.partial ? ' (so far)' : ''))}" data-tip="${addTip(dayTip(d, meas))}"><span class="lg-date">${esc(dayLabel(d.date))}${d.partial ? ' <em>so far</em>' : ''}</span><span class="lg-bar" aria-hidden="true"><i style="width:${Math.max(2, (d.total / max) * 100).toFixed(1)}%"></i></span><span class="lg-val">${esc(fmtMeas(d.total, meas))}</span></li>`).join('');
-  return `<section class="card" aria-labelledby="h-ledger">
-    <div class="card-h"><h2 id="h-ledger">Daily ledger</h2><span class="muted small">Newest first</span></div>
-    ${summary}<ul class="ledger">${rows}</ul>
-  </section>`;
-}
-
-const keyHue = (h) => (parseInt(String(h || '').slice(0, 6), 16) || 0) % 360;
-const keyColor = (h) => 'hsl(' + keyHue(h) + ' 55% 46%)';
-const keyName = (k) => k.name || k.label || String(k.hash || '').slice(0, 8) || 'Unnamed key';
-
-const KEY_SPAN = { '7d': '7d', '30d': '30d', all: 'all time' };
-const keyStatus = (k) => (k.disabled ? ['Disabled', 'off'] : k.lastUsedAt ? ['Active', 'ok'] : ['Never used', '']);
-// No spend in the range and no limit: rendered as the single-line row, sorted after the rest.
-const isSlimKey = (k) => k.spend === 0 && k.limit == null && !k.disabled && !(k.health && k.health.expiry);
-const spendOf = (k) => (k.spend == null ? -1 : k.spend);
-
-function keyAvatar(k, name, small) {
-  const initial = (Array.from(String(name).trim())[0] || '?').toUpperCase();
-  return `<span class="avatar${small ? ' sm' : ''}" style="background:${keyColor(k.hash)}" aria-hidden="true">${esc(initial)}</span>`;
-}
-
-function keySlimHtml(k) {
-  const name = keyName(k);
-  const used = k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used';
-  return `<article class="kslim${k.disabled ? ' is-off' : ''}" aria-label="${esc(name)}">${keyAvatar(k, name, true)}<span class="kc-name" title="${esc(name)}">${esc(name)}</span><span class="kslim-meta">no spend · ${esc(used)}</span></article>`;
-}
-
-function keyCard(k, range) {
-  const name = keyName(k);
-  const [stLabel, stTone] = keyStatus(k);
-  let limit = '';
-  if (k.limit != null) {
-    const lim = k.limit;
-    const p = (k.health.usedFraction || 0) * 100;
-    const w = Math.min(100, Math.max(0, p));
-    const tone = p >= 100 ? 'danger' : p >= 90 ? 'warn' : '';
-    const left = k.limitRemaining != null ? k.limitRemaining : Math.max(0, lim * (1 - p / 100));
-    limit = `<div class="kc-lim"><div class="kmeter ${tone}" role="meter" aria-label="${esc(name)}: limit used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(w)}"><i style="width:${w.toFixed(1)}%"></i></div><span class="kc-pct ${tone}">${p.toFixed(0)}% used · ${esc(money(left))} left</span></div>`;
-  }
-  const foot = [
-    'today ' + money(k.usageDaily + (state.settings && state.settings.includeByok ? k.byokUsageDaily || 0 : 0)),
-    'week ' + money(k.usageWeekly + (state.settings && state.settings.includeByok ? k.byokUsageWeekly || 0 : 0)),
-    'month ' + money(k.usageMonthly + (state.settings && state.settings.includeByok ? k.byokUsageMonthly || 0 : 0)),
-    k.limitReset ? 'Resets ' + k.limitReset + ' at 00:00 UTC' + (k.limitReset === 'weekly' ? ' Monday' : k.limitReset === 'monthly' ? ' on the 1st' : '') : '',
-    k.expiresAt ? 'expires ' + k.expiresAt.slice(0, 10) + ' UTC' : '',
-    k.lastUsedAt ? 'used ' + relTime(k.lastUsedAt) : 'never used',
-    '…' + String(k.hash || '').slice(-6)
-  ].filter(Boolean).join(' · ');
-  const health = k.health || {};
-  const badges = [
-    health.expiry ? `<span class="st ${health.expiry === 'expired' ? 'danger' : 'warn'}">${health.expiry === 'expired' ? 'Expired' : 'Expiring soon'}</span>` : '',
-    health.limit ? `<span class="st ${health.limit === 'exhausted' ? 'danger' : 'warn'}">${health.limit === 'exhausted' ? 'Limit reached' : 'Near limit'}</span>` : ''
-  ].join('');
-  return `<article class="kcard${k.disabled ? ' is-off' : ''}" aria-label="${esc(name)}">
-      <div class="kc-top">${keyAvatar(k, name, false)}
-        <div class="kc-id"><span class="kc-name" title="${esc(name)}">${esc(name)}</span><div class="key-badges"><span class="st ${stTone}">${stLabel}</span>${badges}</div></div>
-        <div class="kc-life"><div class="kc-val"${k.spend == null ? ' title="Not fetched yet"' : ''}>${esc(money(k.spend))}</div><div class="kc-lab">${esc(KEY_SPAN[range] || '')}</div></div>
-      </div>
-      ${limit}
-      <div class="kc-foot">${esc(foot)}</div>
-    </article>`;
-}
-
-function keysCard(rep) {
-  const range = rep.range;
-  const ks = (rep.keys || []).slice().sort((a, b) =>
-    ((isSlimKey(a) ? 1 : 0) - (isSlimKey(b) ? 1 : 0)) || (spendOf(b) - spendOf(a)) || (a.hash < b.hash ? -1 : a.hash > b.hash ? 1 : 0));
-  const n = ks.length;
-  const known = ks.filter((k) => k.spend != null);
-  const total = known.reduce((a, k) => a + k.spend, 0);
-  const spent = ks.filter((k) => k.spend > 0);
-  const top = spent.slice(0, 5);
-  const rest = total - top.reduce((a, k) => a + k.spend, 0);
-  let bar = top.map((k) => `<i style="flex-grow:${k.spend};background:${keyColor(k.hash)}"></i>`).join('');
-  if (spent.length > 5 && rest > 0) bar += `<i style="flex-grow:${rest};background:var(--m-other)"></i>`;
-  const when = range === 'all' ? 'lifetime' : 'in ' + range;
-  const sumTxt = known.length || !n ? money(total) : '—';
-  const body = n
-    ? `<ul class="kcards">${ks.map((k) => `<li data-key="${esc(k.hash)}">${isSlimKey(k) ? keySlimHtml(k) : keyCard(k, range)}</li>`).join('')}</ul>`
-    : '<p class="muted">No API keys on this account.</p>';
-  return `<section class="card" aria-labelledby="h-keys">
-    <div class="card-h"><h2 id="h-keys">API keys</h2><span class="muted small">${n} key${n === 1 ? '' : 's'} · ${esc(sumTxt)} ${esc(when)}</span></div>
-    ${total > 0 ? `<div class="sharebar slim" role="img" aria-label="Share of ${esc(money(total))} ${esc(when)} by key">${bar}</div>` : ''}
-    ${body}
-  </section>`;
-}
-
-function heatSvg(pts) {
-  const cell = 11, gap = 3, stepN = cell + gap, LEFT = 28, TOP = 16;
-  const off = weekday(pts[0].date);
-  const cols = Math.ceil((off + pts.length) / 7);
-  const vals = pts.map((p) => p.cost).filter((v) => v > 0).sort((a, b) => a - b);
-  const q = (p) => (vals.length ? vals[Math.min(vals.length - 1, Math.floor(p * vals.length))] : 0);
-  const t1 = q(0.25), t2 = q(0.5), t3 = q(0.75);
-  const lvl = (v) => (v <= 0 ? 0 : v <= t1 ? 1 : v <= t2 ? 2 : v <= t3 ? 3 : 4);
-  let s = '';
-  [['Mon', 1], ['Wed', 3], ['Fri', 5]].forEach(([lab, row]) => {
-    s += `<text x="0" y="${TOP + row * stepN + cell - 2}">${lab}</text>`;
-  });
-  let lastMonth = -1;
-  pts.forEach((p, i) => {
-    const idx = i + off;
-    const c = Math.floor(idx / 7), r = idx % 7;
-    const x = LEFT + c * stepN, y = TOP + r * stepN;
-    const mon = +p.date.slice(5, 7) - 1;
-    if (mon !== lastMonth && +p.date.slice(8, 10) <= 7) {
-      s += `<text x="${x}" y="10">${MONTHS[mon]}</text>`;
-      lastMonth = mon;
-    }
-    const tip = addTip(`<b>${esc(dayLong(p.date))}</b><div class="row"><span>Spend</span><span>${esc(money(p.cost))}</span></div>`);
-    s += `<rect class="cell q${lvl(p.cost)}" x="${x}" y="${y}" width="${cell}" height="${cell}" rx="2" data-tip="${tip}"/>`;
-  });
-  const w = LEFT + cols * stepN, h = TOP + 7 * stepN;
-  return `<svg class="chart heat" style="width:${w}px;height:${h}px" viewBox="0 0 ${w} ${h}" role="group" aria-label="Daily spend heatmap, ${pts.length} days">${s}</svg>`;
-}
-
-function heatCard(rep) {
-  const pts = (rep.heatmap || []).slice(-182);
-  const body = pts.length ? heatSvg(pts) : '<p class="muted">No history yet.</p>';
-  return `<section class="card" aria-labelledby="h-heat">
-    <div class="card-h"><h2 id="h-heat">Activity</h2>
-      <div class="scale" aria-hidden="true"><span class="muted">Less</span><i class="q0"></i><i class="q1"></i><i class="q2"></i><i class="q3"></i><i class="q4"></i><span class="muted">More</span></div></div>
-    <div class="heat-wrap">${body}</div>
-  </section>`;
-}
-
-function mixCard(rep) {
-  const m = rep.mix;
-  const segs = [
-    ['Cached prompt', m.cachedPrompt, 'var(--s3)'],
-    ['Uncached prompt', m.uncachedPrompt, 'var(--s1)'],
-    ['Completion', m.completion, 'var(--s2)'],
-    ['Reasoning', m.reasoning, 'var(--s4)']
-  ];
-  const total = segs.reduce((a, s) => a + s[1], 0);
-  const R = 38, C = 2 * Math.PI * R;
-  let off = 0;
-  let circles = `<circle cx="50" cy="50" r="${R}" fill="none" stroke="var(--muted)" stroke-width="12"/>`;
-  if (total > 0) {
-    segs.forEach(([, v, col]) => {
-      const len = (C * v) / total;
-      if (len > 0) circles += `<circle cx="50" cy="50" r="${R}" fill="none" stroke-width="12" style="stroke:${col}" stroke-dasharray="${len.toFixed(2)} ${(C - len).toFixed(2)}" stroke-dashoffset="${(-off).toFixed(2)}"/>`;
-      off += len;
-    });
-  }
-  const legend = total > 0
-    ? segs.map(([name, v, col]) => `<li><i class="sw" style="background:${col}"></i><span>${esc(name)}</span><span class="v">${esc(compact(v))} · ${pct(v / total)}</span></li>`).join('')
-    : '<li class="muted">No tokens in this range.</li>';
-  const summary = total > 0 ? 'Token mix: ' + segs.map(([n, v]) => `${n} ${pct(v / total)}`).join(', ') : 'No token activity';
-  return `<section class="card" aria-labelledby="h-mix">
-    <div class="card-h"><h2 id="h-mix">Token mix</h2><span class="muted small">${esc(compact(total))} tokens</span></div>
-    <div class="mix">
-      <svg class="chart donut" viewBox="0 0 100 100" role="img" aria-label="${esc(summary)}"><g transform="rotate(-90 50 50)">${circles}</g><text x="50" y="49" text-anchor="middle" class="t-strong">${esc(compact(total))}</text><text x="50" y="62" text-anchor="middle">tokens</text></svg>
-      <ul class="mix-legend">${legend}</ul>
-    </div>
-  </section>`;
-}
-
-function reportHtml(rep) {
-  const empty = rep.tiles.requests === 0 && rep.tiles.spend === 0 && rep.daily.every((d) => d.total === 0);
-  const note = (t) => `<div class="status" role="status">${esc(t)}</div>`;
-  let h = '';
-  switch (state.tab) {
-    case 'models':
-      h = empty ? note('No models used in this range yet') : modelsCard(rep) + mixCard(rep);
-      break;
-    case 'keys':
-      h = keysCard(rep);
-      break;
-    case 'ledger':
-      h = (empty ? `<section class="card" aria-labelledby="h-ledger"><div class="card-h"><h2 id="h-ledger">Daily ledger</h2></div><p class="muted">No days with activity yet</p></section>` : ledgerCard(rep)) + heatCard(rep);
-      break;
-    default:
-      h = tilesHtml(rep) + comparisonHtml(rep) + monthlyBudgetHtml(rep);
-      if (empty) h += `<section class="card empty-card" aria-labelledby="h-empty"><h2 id="h-empty">No activity yet</h2><p class="muted">Make a request with any of your keys and it will show up here within a few minutes.</p></section>`;
-      else {
-        h += dailyCard(rep);
-        if (rep.intraday && rep.intraday.length >= 2) h += intradayCard(rep);
-      }
-  }
-  return `<div id="tabpanel" role="tabpanel" aria-labelledby="tab-${state.tab}" class="tabbody">${h}</div>`;
-}
-
-/* ---------- rendering: settings view ---------- */
-
-function connResHtml() {
-  const r = state.connRes;
-  if (!r) return '';
-  return r.ok
-    ? `<span class="ok">Connected as ${esc(r.label)}</span>`
-    : `<span class="err-line" role="alert">${esc(r.error)}</span>`;
-}
-
-function optionsHtml(s) {
-  const chk = (v) => (v ? ' checked' : '');
-  const recent = state.savedAt && Date.now() - state.savedAt < 1600;
-  return `<div class="card-h"><h2 id="h-opts">Options</h2><span id="set-saved" class="ok small" role="status">${recent ? 'Saved' : ''}</span></div>
-    <div class="opt-grid">
-      <label class="field"><span>Refresh interval (minutes)</span><input type="number" inputmode="numeric" min="1" max="120" step="1" value="${esc(s.refreshMinutes)}" data-set="refreshMinutes" data-fk="set:refreshMinutes"></label>
-      <label class="field"><span>Low balance alert (USD) <em>0 = off</em></span><input type="number" inputmode="decimal" min="0" step="any" value="${esc(s.lowBalanceUsd)}" data-set="lowBalanceUsd" data-fk="set:lowBalanceUsd"></label>
-      <label class="field"><span>Daily budget (USD) <em>0 = off</em></span><input type="number" inputmode="decimal" min="0" step="any" value="${esc(s.dailyBudgetUsd)}" data-set="dailyBudgetUsd" data-fk="set:dailyBudgetUsd"></label>
-      <label class="field"><span>Monthly budget (USD) <em>0 = off</em></span><input type="number" inputmode="decimal" min="0" step="any" value="${esc(s.monthlyBudgetUsd)}" data-set="monthlyBudgetUsd" data-fk="set:monthlyBudgetUsd"><span class="small">Warn if actual or projected monthly spend exceeds this.</span></label>
-    </div>
-    <div class="toggles">
-      <label class="toggle"><input type="checkbox" data-set="notifications" data-fk="set:notifications"${chk(s.notifications)}><span>Desktop notifications</span></label>
-      <label class="toggle"><input type="checkbox" data-set="statusBar" data-fk="set:statusBar"${chk(s.statusBar)}><span>Show credits in the status bar</span></label>
-      <label class="toggle"><input type="checkbox" data-set="includeByok" data-fk="set:includeByok"${chk(s.includeByok)}><span>Count BYOK usage in spend</span></label>
-    </div>
-    <label class="field"><span>Status bar shows</span><select data-set="statusBarContent" data-fk="set:statusBarContent"${s.statusBar ? '' : ' disabled'}>${SBC.map(([v, l]) => `<option value="${v}"${s.statusBarContent === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
 }
 
 function settingsHtml() {
   const st = state.status || {};
   const s = state.settings;
-  const connLine = st.keyLabel ? `Connected as <strong>${esc(st.keyLabel)}</strong>` : 'Connected with a management key';
-  const confirm = state.confirmDisc
-    ? `<span class="confirm"><span>Remove stored keys from Orca?</span><button type="button" class="btn danger" data-act="disconnect-yes" data-fk="disconnect-yes">Disconnect</button><button type="button" class="btn ghost" data-act="disconnect-no" data-fk="disconnect-no">Cancel</button></span>`
-    : '<button type="button" class="btn danger" data-act="disconnect-ask" data-fk="disconnect-ask">Disconnect</button>';
-  const opts = s
-    ? optionsHtml(s)
-    : `<p class="${state.settingsErr ? 'err-line' : 'muted'}">${state.settingsErr ? 'Could not load settings: ' + esc(state.settingsErr) : 'Loading settings…'}</p>`;
-  return `<section class="card" aria-labelledby="h-conn">
-      <div class="card-h"><h2 id="h-conn">Connection</h2></div>
-      <p>${connLine}</p>
-      <div class="row-actions">
-        <button type="button" class="btn" data-act="conn-test" data-fk="conn-test">${state.connBusy ? '<span class="spinner" aria-hidden="true"></span>Testing…' : 'Test connection'}</button>
-        <span class="small" role="status" aria-live="polite">${connResHtml()}</span>
-      </div>
-      <hr class="hr">
-      <h3>Replace management key</h3>
-      ${keyFormHtml()}
-      <hr class="hr">
-      <div class="danger-row"><div><h3>Disconnect</h3><p class="muted small">Removes the stored management key from Orca.</p></div>${confirm}</div>
+  const row = (t, d, ctl, dis) => `<div class="srow${dis ? ' dis' : ''}"><div><div class="t">${t}</div>${d ? `<div class="d">${d}</div>` : ''}</div>${ctl}</div>`;
+  const num = (key, label, pre, suf, attrs) => `<label class="num">${pre || ''}<input type="number" inputmode="decimal" ${attrs} value="${esc(s[key])}" aria-label="${esc(label)}" data-set="${key}" data-fk="set:${key}">${suf || ''}</label>`;
+  const sw = (key, label) => `<input type="checkbox" class="switch" role="switch" aria-label="${esc(label)}" data-set="${key}" data-fk="set:${key}"${s[key] ? ' checked' : ''}>`;
+  const r = state.connRes;
+  const conn = state.confirmDisc
+    ? `<div class="confirm"><span>Remove the stored key from Orca?</span><button type="button" class="btn danger" data-act="disconnect-yes" data-fk="disconnect-yes">Disconnect</button><button type="button" class="btn ghost" data-act="disconnect-no" data-fk="disconnect-no">Cancel</button></div>`
+    : `<button type="button" class="btn" data-act="conn-test" data-fk="conn-test">${state.connBusy ? '<span class="spinner" aria-hidden="true"></span>Testing…' : 'Test connection'}</button><button type="button" class="btn" data-act="replace" data-fk="replace" aria-expanded="${state.replaceOpen}">Replace key</button><button type="button" class="btn ghost danger" data-act="disconnect-ask" data-fk="disconnect-ask">Disconnect</button>`;
+  const recent = state.savedAt && Date.now() - state.savedAt < 1600;
+  const opts = !s
+    ? `<p class="${state.settingsErr ? 'err-t' : 'muted'}">${state.settingsErr ? 'Could not load settings: ' + esc(state.settingsErr) : 'Loading settings…'}</p>`
+    : `<section aria-labelledby="h-alerts">
+      <div class="sec-h"><h2 id="h-alerts">Refresh and alerts</h2><span id="set-saved" class="${recent ? 'saved' : 'side'}" role="status">${recent ? 'Saved' : 'Saves when you leave a field'}</span></div>
+      ${row('Refresh every', 'How often Orca checks OpenRouter', num('refreshMinutes', 'Refresh interval in minutes', '', 'min', 'min="1" max="120" step="1"'))}
+      ${row('Low-balance alert', 'Warn when credits drop below this. 0 turns it off.', num('lowBalanceUsd', 'Low balance alert in dollars', '$', '', 'min="0" step="any"'))}
+      ${row('Daily budget', "Notify once when today's spend passes it. 0 turns it off.", num('dailyBudgetUsd', 'Daily budget in dollars', '$', '', 'min="0" step="any"'))}
+      ${row('Monthly budget', 'Warn when spend or its pace passes it. 0 turns it off.', num('monthlyBudgetUsd', 'Monthly budget in dollars', '$', '', 'min="0" step="any"'))}
+      ${row('Desktop notifications', 'For low balance and budgets', sw('notifications', 'Desktop notifications'))}
     </section>
-    <section class="card" aria-labelledby="h-opts">${opts}</section>
-    <section class="card" aria-labelledby="h-about">
-      <h2 id="h-about">About the numbers</h2>
-      <p class="muted small">Today is approximate (computed from key totals). Ranges longer than 30 days fill up from the day you installed.</p>
-      <p class="muted small">Days (the Ledger, the daily chart and Today) follow UTC. For you a new day starts at ${esc(utcDayStartLocal())} local time.</p>
+    <section aria-labelledby="h-sb">
+      <h2 id="h-sb">Status bar</h2>
+      ${row('Show credits in the status bar', '', sw('statusBar', 'Show credits in the status bar'))}
+      ${row('Next to credits', '', `<select class="select" aria-label="Status bar shows" data-set="statusBarContent" data-fk="set:statusBarContent"${s.statusBar ? '' : ' disabled'}>${SBC.map(([v, l]) => `<option value="${v}"${s.statusBarContent === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`, !s.statusBar)}
+    </section>
+    <section aria-labelledby="h-spendset">
+      <h2 id="h-spendset">Spend</h2>
+      ${row('Count BYOK usage', 'Include requests made with your own provider keys', sw('includeByok', 'Count BYOK usage in spend'))}
+    </section>`;
+  return `<section aria-labelledby="h-conn">
+      <h2 id="h-conn">Connection</h2>
+      <div class="conn"><span class="ic">${ICON.check}</span><div class="who"><b>${esc(st.keyLabel || 'Management key')}</b><div>Management key, stored in Orca's encrypted secrets</div></div></div>
+      ${r ? `<p class="conn-res ${r.ok ? 'ok-t' : 'err-t'}" role="${r.ok ? 'status' : 'alert'}">${r.ok ? 'Connected as ' + esc(r.label) : esc(r.error)}</p>` : ''}
+      <div class="conn-acts">${conn}</div>
+      ${state.replaceOpen ? keyFormHtml() : ''}
+    </section>
+    ${opts}
+    <section aria-label="About the numbers">
+      <p class="fine">Today is approximate because it comes from key totals. Ranges longer than 30 days fill in from the day you installed.</p>
+      <p class="fine">Days follow UTC. For you a new day starts at ${esc(utcDayStartLocal())}.</p>
     </section>`;
 }
 
-/* ---------- rendering: footer and content ---------- */
+/* ---------- rendering: the rest ---------- */
 
-// Plain-English error states. The worker's messages are shown as-is.
-const mentionsKey = (t) => /key/i.test(String(t || ''));
-const settingsBtn = () => '<button type="button" class="btn" data-act="go-settings" data-fk="go-settings">Replace the key in Settings</button>';
-function errActionsHtml(text) {
-  return `<div class="row-actions"><button type="button" class="btn primary" data-act="refresh" data-fk="try-again">Try again</button>${mentionsKey(text) ? settingsBtn() : ''}</div>`;
-}
-function errorCardHtml(text) {
-  return `<section class="card err-card" role="alert" aria-labelledby="h-err">
-    <h2 id="h-err">Couldn't load your usage</h2>
-    <p class="err-line">${esc(text)}</p>
-    <p class="muted small">It will keep retrying automatically.</p>
-    ${errActionsHtml(text)}
+function setupHtml() {
+  return `<section class="setup" aria-labelledby="h-setup">
+    <h1 id="h-setup">Connect your OpenRouter account</h1>
+    <p>A <strong>management key</strong> is needed to read your credits, activity and keys. It is verified once, then stored encrypted by Orca; this panel never keeps it.</p>
+    ${keyFormHtml()}
   </section>`;
 }
-function staleHtml(s) {
-  return `<div class="notice" role="status"><span>Offline/failing since ${esc(absTime(s.since))}, showing cached data: ${esc(s.error)}</span>${errActionsHtml(s.error)}</div>`;
+
+function skeletonHtml() {
+  return `<div role="status" aria-label="Loading usage" style="display:flex;flex-direction:column;gap:12px">
+    <div class="skel" style="height:52px"></div><div class="skel" style="height:150px"></div><div class="skel" style="height:180px"></div></div>`;
 }
 
-function footerHtml(st) {
-  const last = st.lastRefreshAt
-    ? `<span class="muted" data-rel="${st.lastRefreshAt}" data-prefix="Last refresh ">Last refresh ${relTime(st.lastRefreshAt)}</span>`
-    : '<span class="muted">Not refreshed yet</span>';
-  const exp = state.report && state.tab !== 'settings'
-    ? `<div class="row-actions"><label class="field"><span class="sr-only">Export data</span><select data-export-kind data-fk="export-kind">${[['daily', 'Daily totals'], ['models', 'Models'], ['keys', 'API keys']].map(([v, l]) => `<option value="${v}"${state.exportKind === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label><button type="button" class="btn" data-act="export" data-fk="export"${state.exporting ? ' disabled' : ''}>${state.exporting ? 'Exporting…' : 'Export CSV'}</button><span role="status">${esc(state.exportMessage)}</span></div>`
-    : '';
-  return `<footer class="foot">${exp}${last}</footer>`;
-}
+const mentionsKey = (t) => /key/i.test(String(t || ''));
+const errActions = (text) => `<button type="button" class="btn" data-act="refresh" data-fk="try-again">Try again</button>${mentionsKey(text) ? '<button type="button" class="btn" data-act="go-settings" data-fk="go-settings">Replace the key in Settings</button>' : ''}`;
 
-function contentHtml() {
-  const st = state.status;
-  if (!st) return state.error ? `<div class="status error" role="alert"><span>Could not reach the plugin: ${esc(state.error)}</span><button type="button" class="btn" data-act="retry" data-fk="retry">Retry</button></div>` : skeletonHtml();
-  if (!st.configured) return setupHtml();
-
-  if (state.tab === 'settings') {
-    return `<div class="stack">${noticeHtml()}${settingsHtml()}</div>`;
-  }
-
+function noticesHtml() {
   const rep = state.report;
-  let h = noticeHtml();
-  if (state.error) h += `<div class="status error" role="alert"><span>Could not load the report: ${esc(state.error)}</span><button type="button" class="btn" data-act="retry" data-fk="retry">Retry</button>${mentionsKey(state.error) ? settingsBtn() : ''}</div>`;
-  if (rep && rep.stale) h += staleHtml(rep.stale);
-
-  if (rep) h += reportHtml(rep);
-  else if (!state.error) {
-    if (st.lastError && !state.loading) h += errorCardHtml(st.lastError);
-    else h += skeletonHtml() + (state.loading ? '' : '<div class="status" role="status">Waiting for the first scan to finish. This can take a few seconds.</div>');
-  }
-  h += footerHtml(st);
-  return `<div class="stack${state.loading && rep ? ' busy' : ''}">${h}</div>`;
+  let h = '';
+  if (state.notice) h += `<div class="notice err" role="alert"><span>${esc(state.notice)}</span><button type="button" class="btn ghost" data-act="dismiss-notice" data-fk="dismiss-notice">Dismiss</button></div>`;
+  if (state.error && state.status) h += `<div class="notice err" role="alert"><span>Could not load the report: ${esc(state.error)}</span><button type="button" class="btn" data-act="retry" data-fk="retry">Retry</button></div>`;
+  if (rep && rep.stale) h += `<div class="notice" role="status"><span>Offline since ${esc(absTime(rep.stale.since))}, showing cached data: ${esc(rep.stale.error)}</span>${errActions(rep.stale.error)}</div>`;
+  return h;
 }
 
-/* ---------- render (keeps focus via data-fk) ---------- */
+function footHtml() {
+  const st = state.status;
+  const rep = state.report;
+  const t = (st && st.lastRefreshAt) || (rep && rep.generatedAt);
+  return `<div class="p-foot">${t ? `<span data-rel="${t}" data-prefix="Updated ">Updated ${relTime(t)}</span>` : '<span>Not refreshed yet</span>'}<span title="For you a new day starts at ${esc(utcDayStartLocal())}">Days are UTC</span></div>`;
+}
+
+function bodyHtml() {
+  const st = state.status;
+  if (!st) return state.error ? `<div class="notice err" role="alert"><span>Could not reach the plugin: ${esc(state.error)}</span><button type="button" class="btn" data-act="retry" data-fk="retry">Retry</button></div>` : skeletonHtml();
+  if (!st.configured) return setupHtml();
+  let h = bannerHtml() + warningsHtml() + topHtml() + noticesHtml();
+  const rep = state.report;
+  if (state.tab === 'settings') h += settingsHtml();
+  else if (rep) h += `<div class="${state.loading ? 'busy' : ''}" style="display:flex;flex-direction:column;gap:18px;min-width:0">${state.tab === 'keys' ? keysHtml(rep) : usageHtml(rep)}</div>`;
+  else if (!state.error) {
+    if (st.lastError && !state.loading) h += `<div class="notice err" role="alert"><span><b>Couldn't load your usage.</b> ${esc(st.lastError)} It keeps retrying automatically.</span>${errActions(st.lastError)}</div>`;
+    else h += skeletonHtml();
+  }
+  return h + footHtml();
+}
 
 function render() {
   const app = $('#app');
   const active = document.activeElement;
   const fk = (active && active.getAttribute && active.getAttribute('data-fk')) || '';
-  // Background events (a worker refresh finishing) re-render everything. Keep what the person is
-  // typing: password fields (the key being pasted) and the focused text/number field.
+  // Background refreshes re-render everything. Keep what the person is typing.
   const keep = {};
-  app.querySelectorAll('input[type="password"], input[type="text"], input[type="number"]').forEach((el) => {
+  app.querySelectorAll('input[type="password"], input[type="number"]').forEach((el) => {
     const k = el.id || el.getAttribute('data-fk');
     if (k && (el.type === 'password' || el === active)) keep[k] = { v: el.value, a: el.selectionStart, b: el.selectionEnd };
   });
-  tips = [];
-  hideTip();
-  app.innerHTML = headHtml() + contentHtml() + drawerHtml(state.report);
+  app.innerHTML = bodyHtml();
   Object.keys(keep).forEach((id) => {
     const el = document.getElementById(id) || [...app.querySelectorAll('input[data-fk]')].find((e) => e.getAttribute('data-fk') === id);
     if (el && el.value !== keep[id].v) {
@@ -1173,42 +1040,15 @@ function render() {
       try { if (keep[id].a != null) el.setSelectionRange(keep[id].a, keep[id].b); } catch (e) { /* not selectable */ }
     }
   });
-  if (fk) {
-    const el = [...app.querySelectorAll('[data-fk]')].find((e) => e.getAttribute('data-fk') === fk);
-    if (el) el.focus({ preventScroll: true });
-  }
-  // Re-rendering resets the tab bar's sideways scroll; keep the selected tab visible on narrow panels.
-  // Scroll only the tab bar itself (never the page, which would yank the view up on a background refresh).
-  const tabsEl = app.querySelector('.tabs');
-  const sel = tabsEl && tabsEl.querySelector('[aria-selected="true"]');
-  if (sel) {
-    const l = sel.offsetLeft, r = l + sel.offsetWidth;
-    if (l < tabsEl.scrollLeft) tabsEl.scrollLeft = l;
-    else if (r > tabsEl.scrollLeft + tabsEl.clientWidth) tabsEl.scrollLeft = r - tabsEl.clientWidth;
-  }
+  if (state.tab === 'usage') { drawChart(); drawHeat(); }
+  if (fk) focusFk(fk);
 }
 
-/* ---------- tooltips ---------- */
-
-function showTip(el) {
-  const html = tips[+el.dataset.tip];
-  if (html == null) return;
-  const t = $('#tip');
-  t.innerHTML = html;
-  t.hidden = false;
-  const r = el.getBoundingClientRect();
-  const tw = t.offsetWidth, th = t.offsetHeight;
-  let x = r.left + r.width / 2 - tw / 2;
-  x = Math.max(8, Math.min(window.innerWidth - tw - 8, x));
-  let y = r.top - th - 8;
-  if (y < 8) y = r.bottom + 8;
-  t.style.left = x + 'px';
-  t.style.top = y + 'px';
-}
-
-function hideTip() {
-  const t = $('#tip');
-  if (t) t.hidden = true;
+function focusFk(fk) {
+  const el = [...$('#app').querySelectorAll('[data-fk]')].find((e) => e.getAttribute('data-fk') === fk);
+  if (!el) return false;
+  el.focus({ preventScroll: true });
+  return true;
 }
 
 /* ---------- state transitions ---------- */
@@ -1243,18 +1083,20 @@ async function loadReport(quiet) {
   state.loading = false;
   state.error = err;
   if (!err) state.report = rep || null;
-  let opened = false;
-  if (state.pendingDrawer && state.report && state.report.models.length) {
-    state.pendingDrawer = false;
-    state.drawer = state.report.models[0].name;
-    opened = true;
+  const r = state.report;
+  if (r) {
+    if (state.pendingPin) {
+      const d = state.pendingPin;
+      state.pendingPin = null;
+      state.pin = r.daily.some((x) => x.date === d) ? { from: d, to: d } : null;
+    } else if (state.pin && !r.daily.some((x) => x.date === state.pin.from)) state.pin = null;
+    if (state.model && !r.models.some((m) => m.name === state.model)) state.model = null;
   }
-  if (state.drawer && !(state.report && state.report.models.some((m) => m.name === state.drawer))) state.drawer = null;
+  state.hover = null;
   render();
-  if (opened) focusFk('drawer-close');
+  if (devHook && state.report) { const h = devHook; devHook = null; h(); }
 }
 
-// quiet: an automatic refresh. It shows no spinner and no dimming, and reports failures through the status line.
 async function doRefresh(quiet) {
   if (state.refreshing) return;
   state.refreshing = true;
@@ -1269,14 +1111,11 @@ async function doRefresh(quiet) {
   state.refreshing = false;
   quietRun = false;
   if (!quiet && (!res || res.ok === false)) state.notice = 'Refresh failed: ' + ((res && res.error) || 'unknown error');
-  try {
-    state.status = await req('status.get');
-  } catch (e) { /* keep the last status */ }
+  try { state.status = await req('status.get'); } catch (e) { /* keep the last status */ }
   render();
   if (quiet || !state.notice) loadReport(quiet);
 }
 
-// Starts a quiet refresh when the cached data is older than two minutes (or unknown), at most once per 30 seconds.
 function maybeAutoRefresh() {
   const st = state.status;
   if (!st || !st.configured || st.refreshing || state.refreshing) return;
@@ -1287,38 +1126,28 @@ function maybeAutoRefresh() {
   doRefresh(true);
 }
 
-// Writes the key-form message in place so a typed key is not lost to a re-render.
 function setKeyMsg(ok, text) {
   state.keyMsg = { ok, text };
   const el = $('#key-msg');
-  if (el) {
-    el.className = 'small ' + (ok ? 'ok' : 'err-line');
-    el.textContent = text;
-  }
+  if (el) { el.className = 'msg ' + (ok ? 'ok-t' : 'err-t'); el.textContent = text; }
 }
 
 async function saveKeys() {
   const mEl = $('#mgmt'), btn = $('#save-keys');
   if (!mEl || !btn || btn.disabled) return;
   const m = mEl.value.trim();
-  if (!m) {
-    setKeyMsg(false, 'Enter your management key first.');
-    mEl.focus();
-    return;
-  }
+  if (!m) { setKeyMsg(false, 'Enter your management key first.'); mEl.focus(); return; }
   btn.disabled = true;
   btn.textContent = 'Verifying…';
   setKeyMsg(true, '');
   state.keyMsg = null;
   let res;
-  try {
-    res = await req('keys.save', { mgmtKey: m });
-  } catch (e) {
-    res = { ok: false, error: errMsg(e) };
-  }
+  try { res = await req('keys.save', { mgmtKey: m }); } catch (e) { res = { ok: false, error: errMsg(e) }; }
   if (res && res.ok) {
     mEl.value = '';
     state.keyMsg = { ok: true, text: 'Key verified and saved' };
+    state.replaceOpen = false;
+    state.report = null;
     await refreshStatus();
   } else {
     btn.disabled = false;
@@ -1333,25 +1162,15 @@ async function testConnection() {
   state.connRes = null;
   render();
   let res;
-  try {
-    res = await req('connection.test');
-  } catch (e) {
-    res = { ok: false, error: errMsg(e) };
-  }
+  try { res = await req('connection.test'); } catch (e) { res = { ok: false, error: errMsg(e) }; }
   state.connBusy = false;
-  state.connRes = res && res.ok
-    ? { ok: true, label: res.label }
-    : { ok: false, error: (res && res.error) || 'Connection test failed.' };
+  state.connRes = res && res.ok ? { ok: true, label: res.label } : { ok: false, error: (res && res.error) || 'Connection test failed.' };
   render();
 }
 
 async function disconnect() {
   state.confirmDisc = false;
-  try {
-    await req('keys.clear');
-  } catch (e) {
-    state.notice = 'Could not disconnect: ' + errMsg(e);
-  }
+  try { await req('keys.clear'); } catch (e) { state.notice = 'Could not disconnect: ' + errMsg(e); }
   await refreshStatus();
 }
 
@@ -1365,23 +1184,25 @@ async function loadSettings() {
   render();
 }
 
-async function exportCsv() {
+async function exportCsv(kind) {
   if (state.exporting) return;
-  state.exportKind = $('[data-export-kind]').value;
   state.exporting = true;
-  state.exportMessage = '';
+  state.menu = false;
+  state.exportMessage = null;
   state.notice = '';
   render();
   try {
     if (!host().files) throw new Error('Saving files requires the Orca desktop app.');
-    const options = await req('export.csv', { range: state.range, kind: state.exportKind });
+    const range = kind === 'keys' ? state.keysRange : state.range;
+    const options = await req('export.csv', { range, kind });
     const result = await host().files.saveAs(options);
-    state.exportMessage = result.status === 'saved' ? 'CSV saved' : 'Export cancelled';
+    state.exportMessage = result.status === 'saved' ? { ok: true, text: 'CSV saved' } : { ok: false, text: 'Export cancelled' };
   } catch (e) {
     state.notice = 'Export failed: ' + errMsg(e);
   } finally {
     state.exporting = false;
     render();
+    setTimeout(() => { if (state.exportMessage) { state.exportMessage = null; render(); } }, 4000);
   }
 }
 
@@ -1395,23 +1216,24 @@ function saveSetting(field, value) {
     setTimeout(() => {
       if (state.savedAt !== at) return;
       const m = $('#set-saved');
-      if (m) m.textContent = '';
+      if (m) { m.className = 'side'; m.textContent = 'Saves when you leave a field'; }
     }, 1500);
-    if (field === 'includeByok' || field === 'monthlyBudgetUsd') loadReport();
+    if (field === 'includeByok' || field === 'monthlyBudgetUsd' || field === 'lowBalanceUsd') loadReport(true);
   }).catch((e) => {
     state.notice = 'Could not save setting: ' + errMsg(e);
     render();
   });
 }
 
-// Tab switch. Entering Settings reloads settings.get, as opening the old settings view did.
 function selectTab(id) {
   state.tab = id;
-  state.drawer = null;
+  state.menu = false;
+  state.hover = null;
   if (id === 'settings') {
     state.keyMsg = null;
     state.connRes = null;
     state.confirmDisc = false;
+    state.replaceOpen = false;
   }
   savePrefs();
   render();
@@ -1419,182 +1241,57 @@ function selectTab(id) {
   if (id === 'settings') loadSettings();
 }
 
-/* ---------- model drawer ---------- */
-
-const CLOSE_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
-
-function focusFk(fk) {
-  const el = [...$('#app').querySelectorAll('[data-fk]')].find((e) => e.getAttribute('data-fk') === fk);
-  if (!el) return false;
-  el.focus({ preventScroll: true });
-  return true;
-}
-
-function openDrawer(name) {
-  state.drawer = name;
-  render();
-  focusFk('drawer-close');
-}
-
-function closeDrawer() {
-  if (!state.drawer) return;
-  const fk = 'model:' + state.drawer;
-  state.drawer = null;
-  render();
-  focusFk(fk);
-}
-
-function trapTab(e) {
-  const sheet = $('.sheet');
-  if (!sheet) return;
-  const f = [...sheet.querySelectorAll('button, [href], input, [tabindex]:not([tabindex="-1"])')];
-  if (!f.length) return;
-  const first = f[0], last = f[f.length - 1];
-  const cur = document.activeElement;
-  if (e.shiftKey && (cur === first || !sheet.contains(cur))) { e.preventDefault(); last.focus(); }
-  else if (!e.shiftKey && (cur === last || !sheet.contains(cur))) { e.preventDefault(); first.focus(); }
-}
-
-function sparkHtml(rep, m) {
-  const meas = rep.measure;
-  const series = m.series || [];
-  const n = series.length;
-  const dates = rep.daily.filter((d) => !d.partial).map((d) => d.date);
-  if (!n) return '<p class="muted small">No completed days in this range.</p>';
-  const col = colorOf(m.name);
-  const W = 300, H = 96, P = 6;
-  const hi = Math.max(0, ...series) || 1;
-  const lo = Math.min(...series);
-  const X = (i) => (n === 1 ? W / 2 : P + (i * (W - 2 * P)) / (n - 1));
-  const Y = (v) => H - P - (Math.max(0, v) / hi) * (H - 2 * P);
-  const slot = n === 1 ? W : (W - 2 * P) / (n - 1);
-  const line = series.map((v, i) => `${i ? 'L' : 'M'}${X(i).toFixed(1)} ${Y(v).toFixed(1)}`).join(' ');
-  const area = `${line} L${X(n - 1).toFixed(1)} ${H - P} L${X(0).toFixed(1)} ${H - P} Z`;
-  const hits = series.map((v, i) => {
-    const d = dates[i];
-    const tip = addTip(`<b>${esc(d ? dayLong(d) : 'Day ' + (i + 1))}</b><div class="row"><span>${esc(shortModel(m.name))}</span><span>${esc(fmt(v, meas))}</span></div>`);
-    return `<g class="sp" data-tip="${tip}"><rect class="sp-hit" x="${(X(i) - slot / 2).toFixed(1)}" y="0" width="${slot.toFixed(1)}" height="${H}"/><circle class="sp-dot" cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3.5" style="fill:${col}"/></g>`;
-  }).join('');
-  return `<div class="spark">
-    <div class="spark-mm muted small"><span>Low ${esc(fmt(lo, meas))}</span><span>High ${esc(fmt(hi, meas))}</span></div>
-    <svg class="spark-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(shortModel(m.name))} daily ${meas}, ${n} days">
-      <path class="sp-area" d="${area}" style="fill:${col}"/>
-      <path class="sp-line" d="${line}" style="stroke:${col}"/>
-      ${hits}
-    </svg>
-    <div class="spark-x muted small"><span>${esc(dates[0] ? dayLabel(dates[0]) : '')}</span><span>${esc(dates[n - 1] ? dayLabel(dates[n - 1]) : '')}</span></div>
-  </div>`;
-}
-
-function drawerHtml(rep) {
-  if (!state.drawer || !rep || state.tab !== 'models') return '';
-  const m = rep.models.find((x) => x.name === state.drawer);
-  if (!m) return '';
-  const meas = rep.measure;
-  const total = rep.models.reduce((a, it) => a + modelVal(it, meas), 0);
-  const v = modelVal(m, meas);
-  const hit = m.prompt > 0 ? m.cached / m.prompt : null;
-  const avg = m.requests > 0 ? m.cost / m.requests : null;
-  const tiles = [
-    tile('Requests', groupInt(Math.round(m.requests)), ''),
-    tile('Avg cost / request', avg == null ? '—' : money(avg), 'spend / requests'),
-    tile('Input tokens', compact(m.prompt), 'prompt'),
-    tile('Output tokens', compact(m.completion), 'completion'),
-    tile('Reasoning tokens', compact(m.reasoning), ''),
-    tile('Cached prompt', compact(m.cached), hit == null ? '' : pct(hit) + ' cache hit'),
-    tile('Cost per 1M tokens', m.costPerMTok == null ? '—' : money(m.costPerMTok), 'prompt + completion')
-  ].join('');
-  const dl = meas === 'tokens' ? 'tokens' : 'spend';
-  return `<div class="scrim" data-act="drawer-close" aria-hidden="true"></div>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dr-title" aria-describedby="dr-sub">
-    <div class="sheet-grab" aria-hidden="true"></div>
-    <div class="sheet-body">
-      <div class="dr-head">
-        <i class="sw dr-dot" style="background:${colorOf(m.name)}" aria-hidden="true"></i>
-        <div class="dr-title"><h2 id="dr-title" title="${esc(m.name)}">${esc(shortModel(m.name))}</h2><p class="muted small" id="dr-sub">${esc(m.name)}</p></div>
-        <button type="button" class="icon-btn" data-act="drawer-close" data-fk="drawer-close" aria-label="Close">${CLOSE_SVG}</button>
-      </div>
-      <div><div class="dr-big">${esc(fmt(v, meas))}</div><p class="muted small">${esc(total > 0 ? pct(v / total) : '—')} of total for this range</p></div>
-      <div class="dr-grid">${tiles}</div>
-      <section class="card dr-chart" aria-label="Daily ${dl} for ${esc(shortModel(m.name))}">
-        <div class="card-h"><h3>Daily ${dl}</h3></div>
-        ${sparkHtml(rep, m)}
-      </section>
-    </div>
-  </div>`;
-}
-
 /* ---------- events ---------- */
 
 const app = $('#app');
 
 app.addEventListener('click', (e) => {
+  const cell = e.target.closest && e.target.closest('.heat .cell');
+  if (cell) { pinDate(cell.dataset.d); return; }
+  const hit = e.target.closest && e.target.closest('.chart .hit');
+  if (hit && state.report) {
+    const b = buckets(state.report)[+hit.parentNode.dataset.b];
+    if (b) pinRange({ from: b.from, to: b.to });
+    return;
+  }
   const el = e.target.closest('[data-act]');
-  if (!el) return;
+  if (!el) { if (state.menu) { state.menu = false; render(); } return; }
   const v = el.dataset.val;
   switch (el.dataset.act) {
-    case 'tab':
-      if (state.tab !== v) selectTab(v);
-      break;
+    case 'tab': if (state.tab !== v) selectTab(v); break;
     case 'range':
-      if (state.range !== v) { state.range = v; savePrefs(); loadReport(); }
+      if (state.range !== v) { state.range = v; state.pin = null; state.hover = null; state.model = null; state.modelsAll = false; savePrefs(); loadReport(); }
       break;
     case 'measure':
       if (state.measure !== v) { state.measure = v; savePrefs(); loadReport(); }
       break;
-    case 'model-open':
-      openDrawer(v);
+    case 'krange':
+      if (state.keysRange !== v) { state.keysRange = v; savePrefs(); render(); }
       break;
-    case 'drawer-close':
-      closeDrawer();
-      break;
-    case 'models-more':
-      state.modelsAll = !state.modelsAll;
-      render();
-      break;
-    case 'refresh':
-      doRefresh();
-      break;
-    case 'export':
-      exportCsv();
-      break;
-    case 'conn-test':
-      testConnection();
-      break;
-    case 'retry':
-      if (!state.status) refreshStatus(); else loadReport();
-      break;
-    case 'go-settings':
-      selectTab('settings');
-      break;
-    case 'dismiss-notice':
-      state.notice = '';
-      render();
-      break;
-    case 'open-keys':
-      Promise.resolve(host().shell.openExternal(KEYS_URL)).catch(() => {});
-      break;
-    case 'save-keys':
-      saveKeys();
-      break;
-    case 'disconnect-ask':
-      state.confirmDisc = true;
-      render();
-      { const y = $('[data-fk="disconnect-yes"]'); if (y) y.focus(); }
-      break;
-    case 'disconnect-no':
-      state.confirmDisc = false;
-      render();
-      break;
-    case 'disconnect-yes':
-      disconnect();
-      break;
-    default:
-      break;
+    case 'model': state.model = state.model === v ? null : v; render(); break;
+    case 'models-more': state.modelsAll = !state.modelsAll; render(); break;
+    case 'unpin': state.pin = null; state.hover = null; render(); break;
+    case 'inactive': state.inactiveOpen = !state.inactiveOpen; render(); break;
+    case 'menu': state.menu = !state.menu; render(); if (state.menu) focusFk('export:daily'); break;
+    case 'export': exportCsv(v); break;
+    case 'refresh': doRefresh(); break;
+    case 'dismiss-warn': dismissed.add(v); saveDismissed(); render(); break;
+    case 'add-credits': openUrl(CREDITS_URL); break;
+    case 'conn-test': testConnection(); break;
+    case 'replace': state.replaceOpen = !state.replaceOpen; state.keyMsg = null; render(); if (state.replaceOpen) focusFk('mgmt'); break;
+    case 'retry': if (!state.status) refreshStatus(); else loadReport(); break;
+    case 'go-settings': selectTab('settings'); state.replaceOpen = true; render(); break;
+    case 'dismiss-notice': state.notice = ''; render(); break;
+    case 'open-keys': openUrl(KEYS_URL); break;
+    case 'save-keys': saveKeys(); break;
+    case 'disconnect-ask': state.confirmDisc = true; render(); focusFk('disconnect-yes'); break;
+    case 'disconnect-no': state.confirmDisc = false; render(); break;
+    case 'disconnect-yes': disconnect(); break;
+    default: break;
   }
 });
 
-// Settings controls save on change (blur or Enter for number inputs), never per keystroke.
+// Settings save on change (blur or Enter for numbers), never per keystroke.
 app.addEventListener('change', (e) => {
   const el = e.target;
   const field = el.dataset && el.dataset.set;
@@ -1605,12 +1302,24 @@ app.addEventListener('change', (e) => {
   const n = Number(el.value);
   const min = el.min === '' ? -Infinity : +el.min;
   const max = el.max === '' ? Infinity : +el.max;
-  if (el.value === '' || !isFinite(n) || n < min || n > max) {
-    el.value = cur;
-    return;
-  }
+  if (el.value === '' || !isFinite(n) || n < min || n > max) { el.value = cur; return; }
   if (n === cur) return;
   saveSetting(field, n);
+});
+
+app.addEventListener('pointerover', (e) => {
+  const cell = e.target.closest && e.target.closest('.heat .cell');
+  if (cell) { heatReadout(cell.dataset.d); return; }
+  const hit = e.target.closest && e.target.closest('.chart .hit');
+  if (!hit || state.pin || !state.report) return;
+  const b = buckets(state.report)[+hit.parentNode.dataset.b];
+  if (b && (!state.hover || state.hover.from !== b.from)) { state.hover = { from: b.from, to: b.to }; updateFocus(); }
+});
+app.addEventListener('pointerout', (e) => {
+  const to = e.relatedTarget;
+  if (e.target.closest && e.target.closest('.heat') && !(to && to.closest && to.closest('.heat'))) heatReadout(null);
+  if (!state.hover || state.pin) return;
+  if (!to || !to.closest || !to.closest('.chart')) { state.hover = null; updateFocus(); }
 });
 
 app.addEventListener('keydown', (e) => {
@@ -1619,7 +1328,36 @@ app.addEventListener('keydown', (e) => {
     if (t.closest('.keyform')) { e.preventDefault(); saveKeys(); return; }
     if (t.dataset.set && t.type === 'number') { e.preventDefault(); t.blur(); return; }
   }
-  const seg = t.closest && t.closest('.seg, .tabs');
+  if (e.key === 'Escape') {
+    if (state.menu) { state.menu = false; render(); focusFk('menu'); return; }
+    if (state.pin) { state.pin = null; render(); return; }
+  }
+  const cell = t.closest && t.closest('.heat .cell');
+  if (cell) {
+    const d = cell.dataset.d;
+    const delta = { ArrowLeft: -7, ArrowRight: 7, ArrowUp: -1, ArrowDown: 1 }[e.key];
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pinDate(d); return; }
+    if (delta) {
+      e.preventDefault();
+      const n = addDays(d, delta);
+      const next = $(`#app .heat .cell[data-d="${n}"]`);
+      if (next) { cell.setAttribute('tabindex', '-1'); next.setAttribute('tabindex', '0'); next.focus(); state.heatFocus = n; heatReadout(n); }
+    }
+    return;
+  }
+  const hit = t.closest && t.closest('.chart .hit');
+  if (hit && state.report) {
+    const bs = buckets(state.report), i = +hit.parentNode.dataset.b;
+    let n = null;
+    if (e.key === 'ArrowLeft') n = Math.max(0, i - 1);
+    if (e.key === 'ArrowRight') n = Math.min(bs.length - 1, i + 1);
+    if (e.key === 'Home') n = 0;
+    if (e.key === 'End') n = bs.length - 1;
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pinRange({ from: bs[i].from, to: bs[i].to }); focusFk('bar:' + i); return; }
+    if (n != null) { e.preventDefault(); state.pin = { from: bs[n].from, to: bs[n].to }; state.hover = null; state.model = null; render(); focusFk('bar:' + n); }
+    return;
+  }
+  const seg = t.closest && t.closest('.seg');
   if (seg && /^Arrow/.test(e.key)) {
     e.preventDefault();
     const btns = [...seg.querySelectorAll('button')];
@@ -1631,44 +1369,21 @@ app.addEventListener('keydown', (e) => {
   }
 });
 
-app.addEventListener('mouseover', (e) => {
-  const el = e.target.closest && e.target.closest('[data-tip]');
-  if (el) showTip(el);
+document.addEventListener('click', (e) => {
+  if (state.menu && !(e.target.closest && e.target.closest('.menu-wrap'))) { state.menu = false; render(); }
 });
-app.addEventListener('mouseout', (e) => {
-  const el = e.target.closest && e.target.closest('[data-tip]');
-  if (el && !el.contains(e.relatedTarget)) hideTip();
-});
-app.addEventListener('focusin', (e) => {
-  const el = e.target.closest && e.target.closest('[data-tip]');
-  if (el) showTip(el);
-});
-app.addEventListener('focusout', hideTip);
-
-document.addEventListener('keydown', (e) => {
-  if (state.drawer) {
-    if (e.key === 'Escape') { e.preventDefault(); hideTip(); closeDrawer(); return; }
-    if (e.key === 'Tab') trapTab(e);
-    return;
-  }
-  if (e.key === 'Escape') hideTip();
-});
-
-window.addEventListener('scroll', hideTip, true);
 
 let lastW = window.innerWidth;
 let rzFrame = 0;
 window.addEventListener('resize', () => {
   cancelAnimationFrame(rzFrame);
   rzFrame = requestAnimationFrame(() => {
-    if (Math.abs(window.innerWidth - lastW) > 8) { lastW = window.innerWidth; render(); }
+    if (Math.abs(window.innerWidth - lastW) > 8 && state.tab === 'usage') { lastW = window.innerWidth; drawChart(); drawHeat(); }
   });
 });
 
 setInterval(() => {
-  document.querySelectorAll('[data-rel]').forEach((el) => {
-    el.textContent = (el.dataset.prefix || '') + relTime(+el.dataset.rel);
-  });
+  document.querySelectorAll('[data-rel]').forEach((el) => { el.textContent = (el.dataset.prefix || '') + relTime(+el.dataset.rel); });
 }, 30000);
 
 /* ---------- dev preview mock (only when no Orca host) ---------- */
@@ -1694,32 +1409,30 @@ function makeMock() {
   const TOTAL_CREDITS = 85;
   const LABEL = 'sk-or-v1-abc...xyz';
   const MODELS = [
-    { name: 'anthropic/claude-sonnet-4.5', provider: 'Anthropic', w: 0.32, ppm: 3.0, reason: 0.3 },
-    { name: 'openai/gpt-5-mini', provider: 'OpenAI', w: 0.22, ppm: 0.25, reason: 0.4 },
-    { name: 'google/gemini-2.5-flash', provider: 'Google', w: 0.18, ppm: 0.3, reason: 0.2 },
-    { name: 'google/gemini-2.5-pro', provider: 'Google', w: 0.1, ppm: 1.25, reason: 0.5 },
-    { name: 'deepseek/deepseek-chat', provider: 'Together', w: 0.1, ppm: 0.4, reason: 0 },
-    { name: 'meta-llama/llama-3.3-70b-instruct', provider: 'Together', w: 0.08, ppm: 0.3, reason: 0 }
+    { name: 'anthropic/claude-sonnet-4.5', w: 0.32, ppm: 3.0, reason: 0.3, cache: 0.9 },
+    { name: 'openai/gpt-5-mini', w: 0.22, ppm: 0.25, reason: 0.4, cache: 0.6 },
+    { name: 'google/gemini-2.5-flash', w: 0.18, ppm: 0.3, reason: 0.2, cache: 0.7 },
+    { name: 'google/gemini-2.5-pro', w: 0.1, ppm: 1.25, reason: 0.5, cache: 0.5 },
+    { name: 'deepseek/deepseek-chat', w: 0.1, ppm: 0.4, reason: 0, cache: 0.85 },
+    { name: 'meta-llama/llama-3.3-70b-instruct', w: 0.08, ppm: 0.3, reason: 0, cache: 0.2 }
   ];
-  if (has('many')) for (let i = 1; i <= 7; i++) MODELS.push({ name: 'vendor/extra-model-' + i, provider: 'Other', w: 0.02, ppm: 0.2 + i * 0.05, reason: 0 });
+  if (has('many')) for (let i = 1; i <= 7; i++) MODELS.push({ name: 'vendor/extra-model-' + i, w: 0.02, ppm: 0.2 + i * 0.05, reason: 0, cache: 0.3 });
   const rows = [];
   for (let i = 0; i <= HISTORY; i++) {
     const date = addDays(today, -i);
     const weekend = [0, 6].includes(weekday(date));
-    const partial = i === 0;
-    const day = (0.6 + 0.8 * rnd()) * (weekend ? 0.6 : 1) * (partial ? 0.45 : 1);
+    const day = (0.6 + 0.8 * rnd()) * (weekend ? 0.6 : 1) * (i === 0 ? 0.45 : 1);
     MODELS.forEach((m) => {
       const cost = round4(day * m.w * (0.7 + 0.6 * rnd()));
       if (cost <= 0) return;
       const tok = (cost / m.ppm) * 1e6;
-      const prompt = Math.round(tok * 0.8);
-      const completion = Math.round(tok * 0.2);
+      const prompt = Math.round(tok * 0.92);
+      const completion = Math.round(tok * 0.08);
       rows.push({
-        date, model: m.name, provider: m.provider, endpoint: m.provider.toLowerCase() + '/main',
-        usage: cost, byokUsage: rnd() < 0.12 ? round4(cost * 0.25) : 0,
+        date, model: m.name, usage: cost, byokUsage: rnd() < 0.12 ? round4(cost * 0.25) : 0,
         requests: Math.max(1, Math.round(cost / (0.003 + m.ppm * 0.0009))),
         prompt, completion, reasoning: Math.round(completion * m.reason),
-        cached: Math.round(prompt * (0.2 + 0.4 * rnd()))
+        cached: Math.round(prompt * Math.min(0.97, m.cache + (rnd() - 0.5) * 0.1))
       });
     });
   }
@@ -1728,27 +1441,29 @@ function makeMock() {
   const KEYS = [
     { name: 'prod-api', expiresAt: new Date(Date.now() + 3 * 86400e3).toISOString(), limitReset: 'monthly', label: 'sk-or-v1-…a41f', limit: 50, usage: 18.8, d: 1.2, w: 6.4, m: 16.2, s7: 6.4, s30: 16.2, sAll: 18.8, agoMin: 7, disabled: false },
     { name: '', label: 'sk-or-v1-…9c02', limit: null, usage: 3.1, d: 0, w: 0.4, m: 1.7, s7: 0.4, s30: 1.7, sAll: 3.1, agoMin: 95, disabled: false },
-    { name: 'n8n automations', limitReset: 'monthly', label: '', limit: 20, usage: 19, d: 0.7, w: 3.9, m: 18.8, s7: 3.9, s30: 18.8, sAll: 19, agoMin: 180, disabled: false },
+    { name: 'n8n automations', limitReset: 'monthly', label: 'sk-or-v1-…72f4', limit: 20, usage: 19, d: 0.7, w: 3.9, m: 18.8, s7: 3.9, s30: 18.8, sAll: 19, agoMin: 180, disabled: false },
     { name: 'staging', expiresAt: new Date(Date.now() - 86400e3).toISOString(), label: '', limit: 10, usage: 0.4, d: 0, w: 0, m: 0.4, s7: 0, s30: 0.4, sAll: 0.4, agoMin: 5760, disabled: true },
-    { name: 'laptop-cli', label: '', limit: null, usage: 5.6, d: 0.3, w: 1.9, m: 4.7, s7: 1.9, s30: 4.7, sAll: 5.6, agoMin: 30, disabled: false },
+    { name: 'laptop-cli', label: 'sk-or-v1-…e9f0', limit: null, usage: 5.6, d: 0.3, w: 1.9, m: 4.7, s7: 1.9, s30: 4.7, sAll: 5.6, agoMin: 30, disabled: false },
     { name: 'ci-bot', label: '', limit: null, usage: 0, d: 0, w: 0, m: 0, s7: 0, s30: 0, sAll: 0, agoMin: 2880, disabled: false },
     { name: 'old-experiments', label: '', limit: 25, usage: 0, d: 0, w: 0, m: 0, s7: 0, s30: 0, sAll: 0, agoMin: null, disabled: false }
   ].map((k) => ({ ...k, hash: hex(64) }));
   const keysFor = (range) => KEYS.map((k) => {
     const used = k.limitReset === 'monthly' ? k.m : k.usage;
+    const spendByRange = { '7d': k.s7, '30d': k.s30, all: k.sAll };
     return {
-    hash: k.hash, name: k.name, label: k.label, disabled: k.disabled, limit: k.limit,
-    limitRemaining: k.limit == null ? null : Math.max(0, round2(k.limit - used)),
-    usage: k.usage, usageDaily: k.d, usageWeekly: k.w, usageMonthly: k.m,
-    byokUsage: 0, byokUsageDaily: 0, byokUsageWeekly: 0, byokUsageMonthly: 0,
-    limitReset: k.limitReset || null, expiresAt: k.expiresAt || null, includeByokInLimit: false,
-    health: { expiry: k.expiresAt ? Date.parse(k.expiresAt) <= Date.now() ? 'expired' : 'expiring' : null,
-      limit: k.limit != null && used / k.limit >= 0.9 ? 'near' : null,
-      usedFraction: k.limit != null ? used / k.limit : null },
-    lastUsedAt: k.agoMin == null ? null : new Date(Date.now() - k.agoMin * 60e3).toISOString(),
-    spend: range === '7d' ? k.s7 : range === '30d' ? k.s30 : k.sAll
-  }; });
-  // #new: a brand-new account (no activity, no keys, zero credits). #offline / #revoked: report unavailable, status carries the error.
+      hash: k.hash, name: k.name, label: k.label, disabled: k.disabled, limit: k.limit,
+      limitRemaining: k.limit == null ? null : Math.max(0, round2(k.limit - used)),
+      usage: k.usage, usageDaily: k.d, usageWeekly: k.w, usageMonthly: k.m,
+      byokUsage: 0, byokUsageDaily: 0, byokUsageWeekly: 0, byokUsageMonthly: 0,
+      limitReset: k.limitReset || null, expiresAt: k.expiresAt || null, includeByokInLimit: false,
+      health: { expiry: k.expiresAt ? Date.parse(k.expiresAt) <= Date.now() ? 'expired' : 'expiring' : null,
+        limit: k.limit != null && used / k.limit >= 0.9 ? 'near' : null,
+        usedFraction: k.limit != null ? used / k.limit : null },
+      lastUsedAt: k.agoMin == null ? null : new Date(Date.now() - k.agoMin * 60e3).toISOString(),
+      spend: spendByRange[range], spendByRange
+    };
+  });
+  // #new: a brand-new account. #offline / #revoked: report unavailable, status carries the error.
   const NEW = has('new');
   const DOWN = has('offline') ? "Can't reach OpenRouter. Check your internet connection." : has('revoked') ? 'OpenRouter rejected this key. It may be mistyped or revoked.' : null;
   let configured = !has('setup');
@@ -1765,98 +1480,71 @@ function makeMock() {
   };
 
   function mockReport(range, measure) {
-    const span = range === '7d' ? 7 : range === '30d' ? 30 : HISTORY + 1;
+    const span = range === '7d' ? 7 : range === '30d' ? 30 : HISTORY;
     const dates = [];
     for (let i = span; i >= 1; i--) dates.push(addDays(today, -i));
     const dset = new Set(dates);
     const cost = (r) => r.usage + (settings.includeByok ? r.byokUsage : 0);
     const val = (r) => (measure === 'tokens' ? r.prompt + r.completion : cost(r));
-    const rowsR = has('empty') || NEW ? [] : rows.filter((r) => dset.has(r.date));
+    const quiet = has('empty') || NEW;
+    const rowsR = quiet ? [] : rows.filter((r) => dset.has(r.date));
     const sum = (arr, f) => arr.reduce((a, r) => a + f(r), 0);
     const spend = sum(rowsR, cost);
-    const tokIn = sum(rowsR, (r) => r.prompt);
-    const tokOut = sum(rowsR, (r) => r.completion);
-    const cached = sum(rowsR, (r) => r.cached);
-    const reasoning = sum(rowsR, (r) => r.reasoning);
+    const tokIn = sum(rowsR, (r) => r.prompt), tokOut = sum(rowsR, (r) => r.completion);
+    const cached = sum(rowsR, (r) => r.cached), reasoning = sum(rowsR, (r) => r.reasoning);
     const requests = sum(rowsR, (r) => r.requests);
-    const todayCost = has('empty') || NEW ? 0 : sum(rows.filter((r) => r.date === today), cost);
-
+    const todayCost = quiet ? 0 : sum(rows.filter((r) => r.date === today), cost);
     const previousDates = new Set(Array.from({ length: span }, (_, i) => addDays(today, -span - i - 1)));
-    const previousRows = NEW || has('empty') ? [] : rows.filter((r) => previousDates.has(r.date));
+    const previousRows = quiet ? [] : rows.filter((r) => previousDates.has(r.date));
     const previous = sum(previousRows, cost);
     const comparison = range === 'all' || NEW ? null : { days: span, current: spend, previous, changePercent: previous > 0 ? (spend - previous) / previous * 100 : spend > 0 ? null : 0 };
-    const modelTot = {};
-    rowsR.forEach((r) => { modelTot[r.model] = (modelTot[r.model] || 0) + val(r); });
-    const top = Object.keys(modelTot).sort((a, b) => modelTot[b] - modelTot[a]).slice(0, 5);
     const daily = dates.map((date) => {
       const byModel = {};
-      const otherModels = {};
+      const mix = { cachedPrompt: 0, uncachedPrompt: 0, completion: 0, reasoning: 0 };
       let total = 0;
       rowsR.filter((r) => r.date === date).forEach((r) => {
-        const k = top.includes(r.model) ? r.model : 'other';
-        byModel[k] = (byModel[k] || 0) + val(r);
-        if (k === 'other') otherModels[r.model] = (otherModels[r.model] || 0) + val(r);
+        byModel[r.model] = round4((byModel[r.model] || 0) + val(r));
         total += val(r);
+        mix.cachedPrompt += r.cached; mix.uncachedPrompt += r.prompt - r.cached; mix.completion += r.completion; mix.reasoning += r.reasoning;
       });
-      return { date, total: round4(total), byModel, otherModels, partial: date === today };
+      return { date, total: round4(total), byModel, mix, partial: false };
     });
-
-    if (measure === 'cost') daily.push({ date: today, total: todayCost, byModel: { other: todayCost }, otherModels: {}, partial: true });
-    const nonPartial = dates;
-    const seriesFor = (name) => nonPartial.map((date) =>
-      round4(rowsR.filter((r) => r.date === date && r.model === name).reduce((a, r) => a + val(r), 0)));
+    if (measure === 'cost') daily.push({ date: today, total: todayCost, byModel: {}, mix: { cachedPrompt: 0, uncachedPrompt: 0, completion: 0, reasoning: 0 }, partial: true });
     const ranked = () => {
       const m = {};
       rowsR.forEach((r) => {
         const o = m[r.model] || (m[r.model] = { name: r.model, cost: 0, requests: 0, prompt: 0, completion: 0, reasoning: 0, cached: 0 });
-        o.cost += cost(r); o.requests += r.requests; o.prompt += r.prompt; o.completion += r.completion;
-        o.reasoning += r.reasoning; o.cached += r.cached;
+        o.cost += cost(r); o.requests += r.requests; o.prompt += r.prompt; o.completion += r.completion; o.reasoning += r.reasoning; o.cached += r.cached;
       });
       return Object.values(m).map((o) => {
         const tok = o.prompt + o.completion;
-        return { ...o, previousCost: comparison ? sum(previousRows.filter((r) => r.model === o.name), cost) : null, cost: round4(o.cost), costPerMTok: tok ? round4((o.cost / tok) * 1e6) : null, series: seriesFor(o.name) };
+        return { ...o, previousCost: comparison ? sum(previousRows.filter((r) => r.model === o.name), cost) : null, cost: round4(o.cost), costPerMTok: tok ? round4((o.cost / tok) * 1e6) : null, series: [] };
       }).sort((a, b) => (measure === 'tokens' ? b.prompt + b.completion - (a.prompt + a.completion) : b.cost - a.cost));
     };
-
-    const costBy = {};
-    rows.forEach((r) => { costBy[r.date] = (costBy[r.date] || 0) + cost(r); });
+    const heatBy = {};
+    rows.forEach((r) => { const h = heatBy[r.date] || (heatBy[r.date] = { cost: 0, tokens: 0 }); h.cost += cost(r); h.tokens += r.prompt + r.completion; });
     const heatmap = [];
-    for (let i = 182; i >= 1; i--) {
+    for (let i = HISTORY; i >= 1; i--) {
       const d = addDays(today, -i);
-      heatmap.push({ date: d, cost: NEW ? 0 : round4(costBy[d] || 0) });
+      heatmap.push({ date: d, cost: quiet ? 0 : round4((heatBy[d] || {}).cost || 0), tokens: quiet ? 0 : (heatBy[d] || {}).tokens || 0 });
     }
-
     const yest = [1, 2, 3, 4, 5, 6, 7].map((i) => addDays(today, -i));
     const burnTotal = NEW ? 0 : rows.filter((r) => yest.includes(r.date)).reduce((a, r) => a + r.usage, 0);
     const burnPerDay = burnTotal > 0 ? round4(burnTotal / 7) : null;
-    // #low: put the balance under the alert threshold (warning tone).
+    // #low: put the balance under the alert threshold.
     const remaining = NEW ? 0 : has('low') ? round2(Math.max(1, settings.lowBalanceUsd) * 0.7) : round2(TOTAL_CREDITS - totalUsage);
     const daysLeft = burnPerDay ? round2(remaining / burnPerDay) : null;
-
-    const mNow = Date.now();
-    const midnight = Date.parse(today + 'T00:00:00Z');
-    const steps = Math.max(2, Math.floor((mNow - midnight) / (90 * 60e3)));
-    const intraday = has('empty') || NEW ? [] : Array.from({ length: steps + 1 }, (_, i) => ({
-      t: Math.round(midnight + (i * (mNow - midnight)) / steps),
-      remaining: round2(remaining + 0.6 - (i * 0.6) / steps + (i % 2 ? 0.02 : 0))
-    }));
-
     const monthStart = today.slice(0, 8) + '01';
-    const monthDone = (NEW ? [] : rows).filter((r) => r.date >= monthStart && r.date < today).reduce((a, r) => a + r.usage + (settings.includeByok ? r.byokUsage : 0), 0);
+    const monthDone = (NEW ? [] : rows).filter((r) => r.date >= monthStart && r.date < today).reduce((a, r) => a + cost(r), 0);
     const monthToDate = round4(monthDone + todayCost);
     const dim = new Date(Date.UTC(+today.slice(0, 4), +today.slice(5, 7), 0)).getUTCDate();
     const recentSpend = NEW ? null : rows.filter((r) => yest.includes(r.date)).reduce((a, r) => a + cost(r), 0) / 7;
     const monthProjected = recentSpend == null ? null : round4(monthToDate + recentSpend * (dim - +today.slice(8, 10)));
     return {
-      generatedAt: Date.now(),
-      range, measure,
+      generatedAt: Date.now(), range, measure,
       balance: { remaining, burnPerDay, daysLeft },
-      tiles: {
-        spend: round4(spend), today: round4(todayCost), tokensIn: tokIn, tokensOut: tokOut, reasoning, requests,
-        avgCostPerRequest: requests ? round4(spend / requests) : null,
-        cacheHitRate: tokIn ? cached / tokIn : null,
-        monthToDate, monthProjected
-      },
+      tiles: { spend: round4(spend), today: round4(todayCost), tokensIn: tokIn, tokensOut: tokOut, reasoning, requests,
+        avgCostPerRequest: requests ? round4(spend / requests) : null, cacheHitRate: tokIn ? cached / tokIn : null, monthToDate, monthProjected },
       comparison,
       monthlyBudgetUsd: settings.monthlyBudgetUsd,
       daily,
@@ -1864,7 +1552,7 @@ function makeMock() {
       keys: NEW ? [] : keysFor(range),
       mix: { cachedPrompt: cached, uncachedPrompt: Math.max(0, tokIn - cached), completion: tokOut, reasoning },
       heatmap,
-      intraday,
+      intraday: [],
       historyDays: HISTORY,
       stale: has('stale') ? { since: Date.now() - 3600e3, error: 'HTTP 503 from openrouter.ai (upstream timeout)' } : null
     };
@@ -1872,9 +1560,7 @@ function makeMock() {
 
   const handlers = {
     'status.get': async () => ({
-      configured,
-      keyLabel: configured ? LABEL : null,
-      refreshing: false,
+      configured, keyLabel: configured ? LABEL : null, refreshing: false,
       lastRefreshAt: Date.now() - 120e3,
       lastError: DOWN || (has('stale') ? 'HTTP 503 from openrouter.ai (upstream timeout)' : null)
     }),
@@ -1884,18 +1570,16 @@ function makeMock() {
       configured = true;
       return { ok: true, label: LABEL };
     },
-    'connection.test': async () => (configured
-      ? { ok: true, label: LABEL }
-      : { ok: false, error: 'Not connected. Save a management key first.' }),
+    'connection.test': async () => (configured ? { ok: true, label: LABEL } : { ok: false, error: 'Not connected. Save a management key first.' }),
     'keys.clear': async () => { configured = false; return { ok: true }; },
     'settings.get': async () => ({ ...settings }),
     'settings.set': async (inp) => { Object.assign(settings, clampSettings(inp || {})); return { ...settings }; },
     'report.get': async (inp) => (configured && !DOWN ? mockReport(inp.range, inp.measure) : null),
     'export.csv': async (inp) => {
       const rep = mockReport(inp.range, 'cost');
-      const rows = inp.kind === 'models' ? rep.models.map((m) => [m.name, m.cost]) : inp.kind === 'keys' ? rep.keys.map((k) => [keyName(k), k.spend]) : rep.daily.map((d) => [d.date, d.total]);
+      const out = inp.kind === 'models' ? rep.models.map((m) => [m.name, m.cost]) : inp.kind === 'keys' ? rep.keys.map((k) => [keyName(k), k.spend]) : rep.daily.map((d) => [d.date, d.total]);
       const quote = (v) => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
-      return { suggestedName: `openrouter-${inp.kind}-${inp.range}-${today}.csv`, mimeType: 'text/csv;charset=utf-8', data: [['name_or_date', 'spend_usd'], ...rows].map((r) => r.map(quote).join(',')).join('\r\n') };
+      return { suggestedName: `openrouter-${inp.kind}-${inp.range}-${today}.csv`, mimeType: 'text/csv;charset=utf-8', data: [['name_or_date', 'spend_usd'], ...out].map((r) => r.map(quote).join(',')).join('\r\n') };
     },
     'refresh': async () => ({ ok: true })
   };
@@ -1905,7 +1589,7 @@ function makeMock() {
     api: { major: 1, minor: 4 },
     locale: 'en-US',
     on(ev, fn) { (listeners[ev] = listeners[ev] || []).push(fn); return () => {}; },
-    // Dev preview only: lets a test fire a worker event (e.g. report.changed) like a finished refresh would.
+    // Dev preview only: lets a test fire a worker event like a finished refresh would.
     emit(ev, payload) { (listeners[ev] || []).forEach((fn) => fn(payload)); },
     plugin: {
       async request(name, input) {
@@ -1923,28 +1607,37 @@ function makeMock() {
         return { status: 'saved' };
       }
     },
-    shell: {
-      async openExternal(url) { window.open(url, '_blank', 'noopener'); return { opened: true }; }
-    }
+    shell: { async openExternal(url) { window.open(url, '_blank', 'noopener'); return { opened: true }; } }
   };
 }
 
-if (!window.orca || !window.orca.plugin) window.orca = makeMock();
+if (!window.orca || !window.orca.plugin) {
+  window.orca = makeMock();
+  // Preview states for screenshots: #pin=<days ago>, #model (select the top model), #scroll=<element id>.
+  const h = location.hash;
+  const pinAgo = (h.match(/(?:^#|,)pin=(\d+)/) || [])[1];
+  const scrollTo = (h.match(/(?:^#|,)scroll=([a-z-]+)/) || [])[1];
+  if (pinAgo || /(?:^#|,)model(?:,|$)/.test(h) || scrollTo) devHook = () => {
+    if (pinAgo) pinDate(addDays(utcToday(), -+pinAgo));
+    else if (/(?:^#|,)model(?:,|$)/.test(h) && state.report.models[0]) { state.model = state.report.models[0].name; render(); }
+    const el = scrollTo && document.getElementById(scrollTo);
+    if (el) el.scrollIntoView({ block: 'start' });
+  };
+}
 
 /* ---------- start ---------- */
 
 loadPrefs();
-// #tab=keys (any tab id) selects a tab for this load only; it is not written to prefs.
+// #tab=keys selects a tab for this load only; it is not written to prefs.
 const hashTab = (location.hash.match(/(?:^#|,)tab=([a-z]+)/) || [])[1];
 if (TABS.some(([id]) => id === hashTab)) state.tab = hashTab;
-state.pendingDrawer = location.hash.includes('drawer');
-if (state.pendingDrawer) state.tab = 'models';
-host().on('report.changed', () => { if (state.status && state.status.configured) loadReport(); });
+host().on('report.changed', () => { if (state.status && state.status.configured) loadReport(true); });
 host().on('status.changed', (s) => {
   state.status = s;
   if (!s.configured) { state.report = null; render(); return; }
   if (!state.report && !state.loading) loadReport(); else render();
 });
+host().on('theme', () => { if (state.tab === 'usage') { drawChart(); drawHeat(); } });
 render();
 refreshStatus().then(maybeAutoRefresh);
 loadSettings();

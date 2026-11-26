@@ -12,6 +12,7 @@ import type {
   Report,
   ReportKey,
   Tiles,
+  TokenMix,
 } from '../protocol'
 
 export interface ReportInput {
@@ -30,7 +31,6 @@ export interface ReportInput {
 }
 
 const DAY_MS = 86_400_000
-const TOP_MODELS = 5
 const BURN_DAYS = 7
 
 const num = (v: unknown): number => {
@@ -196,38 +196,23 @@ export function buildReport(input: ReportInput): Report {
   const days: string[] = []
   if (startDay !== null) for (let d = startDay; d <= yesterday; d = addDays(d, 1)) days.push(d)
 
-  const totalsByModel = new Map<string, number>()
-  for (const r of scoped) totalsByModel.set(r.model, (totalsByModel.get(r.model) ?? 0) + valueOf(r, measure, inc))
-  const top = [...totalsByModel.entries()]
-    .sort((a, b) => b[1] - a[1] || byName(a[0], b[0]))
-    .slice(0, TOP_MODELS)
-    .map((e) => e[0])
-  const topSet = new Set(top)
-  const hasOther = totalsByModel.size > TOP_MODELS
-  const keyNames = hasOther ? [...top, 'other'] : top
-
+  const emptyMix = (): TokenMix => ({ cachedPrompt: 0, uncachedPrompt: 0, completion: 0, reasoning: 0 })
   const bars = new Map<string, DailyBar>()
-  for (const d of days) {
-    bars.set(d, {
-      date: d,
-      total: 0,
-      byModel: Object.fromEntries(keyNames.map((k) => [k, 0])),
-      otherModels: {},
-      partial: false,
-    })
-  }
+  for (const d of days) bars.set(d, { date: d, total: 0, byModel: {}, mix: emptyMix(), partial: false })
   for (const r of scoped) {
     const bar = bars.get(r.date)
     if (!bar) continue
     const v = valueOf(r, measure, inc)
-    const key = topSet.has(r.model) ? r.model : 'other'
     bar.total += v
-    bar.byModel[key] = (bar.byModel[key] ?? 0) + v
-    if (key === 'other') bar.otherModels[r.model] = (bar.otherModels[r.model] ?? 0) + v
+    bar.byModel[r.model] = (bar.byModel[r.model] ?? 0) + v
+    bar.mix.cachedPrompt += r.cached
+    bar.mix.uncachedPrompt += Math.max(0, r.prompt - r.cached)
+    bar.mix.completion += r.completion
+    bar.mix.reasoning += r.reasoning
   }
   const daily: DailyBar[] = days.map((d) => bars.get(d)!)
   if (measure === 'cost') {
-    daily.push({ date: today, total: tiles.today, byModel: { other: tiles.today }, otherModels: {}, partial: true })
+    daily.push({ date: today, total: tiles.today, byModel: {}, mix: emptyMix(), partial: true })
   }
 
   // Token mix for the range.
@@ -240,12 +225,17 @@ export function buildReport(input: ReportInput): Report {
 
   // Heatmap: daily cost over all completed history, ignoring range.
   const history = rows.filter((r) => !!r.date && r.date < today)
-  const heat = new Map<string, number>()
-  for (const r of history) heat.set(r.date, (heat.get(r.date) ?? 0) + rowCost(r, inc))
+  const heat = new Map<string, { cost: number; tokens: number }>()
+  for (const r of history) {
+    const h = heat.get(r.date) ?? { cost: 0, tokens: 0 }
+    h.cost += rowCost(r, inc)
+    h.tokens += r.prompt + r.completion
+    heat.set(r.date, h)
+  }
   // /activity has no rows for idle days, but the calendar places cells by position: fill every day.
-  const heatmap: { date: string; cost: number }[] = []
+  const heatmap: Report['heatmap'] = []
   if (firstStored !== null) {
-    for (let d = firstStored; d <= yesterday; d = addDays(d, 1)) heatmap.push({ date: d, cost: heat.get(d) ?? 0 })
+    for (let d = firstStored; d <= yesterday; d = addDays(d, 1)) heatmap.push({ date: d, cost: heat.get(d)?.cost ?? 0, tokens: heat.get(d)?.tokens ?? 0 })
   }
 
   // Intraday: today's credit-balance snapshots.
@@ -321,11 +311,13 @@ export function buildReport(input: ReportInput): Report {
     daily,
     models,
     keys: keys.map((k): ReportKey => {
-      let spend: number | null
-      if (range === 'all') spend = k.usage + (inc ? k.byokUsage ?? 0 : 0)
-      else if (keyRows[k.hash]) spend = filterRows(keyRows[k.hash], range, now).reduce((s, r) => s + rowCost(r, inc), 0)
-      else spend = keyMayHaveRecentActivity(k, now) ? null : 0
-      return { ...k, spend, health: keyHealth(k, now) }
+      const spendIn = (rg: Range): number | null => {
+        if (rg === 'all') return k.usage + (inc ? k.byokUsage ?? 0 : 0)
+        if (keyRows[k.hash]) return filterRows(keyRows[k.hash], rg, now).reduce((s, r) => s + rowCost(r, inc), 0)
+        return keyMayHaveRecentActivity(k, now) ? null : 0
+      }
+      const spendByRange = { '7d': spendIn('7d'), '30d': spendIn('30d'), all: spendIn('all') }
+      return { ...k, spend: spendByRange[range], spendByRange, health: keyHealth(k, now) }
     }),
     mix,
     heatmap,

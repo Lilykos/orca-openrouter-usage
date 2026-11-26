@@ -75,27 +75,24 @@ if (!chrome) {
 // ---- 2. every view renders what it should, with no junk values ----
 section('Views')
 const views = [
-  ['overview', 'dark,tab=overview', ['Daily spend', 'Credits left', 'This month', 'by month end']],
-  ['overview comparison', 'dark,tab=overview', ['vs previous 7 days'], { range: '7d' }],
-  ['comparison needs history', 'dark,new,tab=overview', ['Collecting history'], { range: '7d' }],
-  ['monthly budget', 'dark,budget,tab=overview', ['Monthly budget', 'used']],
-  ['overview, tokens measure', 'dark,tab=overview', ['Daily tokens'], { measure: 'tokens' }],
-  ['models, 7d', 'dark,tab=models', ['across'], { range: '7d' }],
-  ['models', 'dark,tab=models', ['across', 'models']],
-  ['models drawer', 'dark,tab=models,drawer', ['Requests', 'Cost per 1M tokens']],
-  ['models, many (toggle shown)', 'dark,tab=models,many', ['Show 5 more']],
-  ['keys', 'dark,tab=keys', ['API keys', 'in 30d']],
-  ['key health', 'dark,tab=keys', ['Expiring soon', 'Expired', 'Near limit', 'Resets monthly']],
-  ['ledger', 'light,tab=ledger', ['Daily ledger']],
-  ['settings', 'dark,tab=settings', ['Connection', 'Status bar shows', 'follow UTC']],
+  ['usage', 'dark', ['Credits left', 'Add credits', 'Spend', 'on pace for', 'Models', 'Token mix', 'cache hit', 'Activity']],
+  ['usage, light', 'light', ['Credits left', 'Token mix', 'Activity']],
+  ['comparison', 'dark', ['previous 7'], { range: '7d' }],
+  ['comparison needs history', 'dark,new', ['after more history'], { range: '7d' }],
+  ['monthly budget', 'dark,budget', ['Budget $25.00', 'budget']],
+  ['tokens measure', 'dark', ['Tokens', 'prompt to output', 'tokens in total'], { measure: 'tokens' }],
+  ['7-day range', 'dark', ['last 7 days'], { range: '7d' }],
+  ['many models (toggle shown)', 'dark,many', ['7 more models']],
+  ['keys', 'dark,tab=keys', ['API keys', 'active keys', 'inactive keys']],
+  ['key health', 'dark,tab=keys', ['Expires', 'Near limit', 'resets monthly']],
+  ['key warnings under the banner', 'dark', ['expires', 'has used 94% of its']],
+  ['settings', 'dark,tab=settings', ['Connection', 'Refresh every', 'Next to credits', 'Count BYOK usage', 'Days follow UTC']],
   ['setup (not connected)', 'dark,setup', ['management key']],
-  ['empty range', 'dark,empty', ['No activity']],
+  ['empty range', 'dark,empty', ['No models in this range', 'No tokens in this range']],
   ['stale data', 'dark,stale', ['cached data']],
-  ['low balance', 'dark,low', ['Credits left']],
-  ['new account (overview)', 'dark,new,tab=overview', ['No activity yet']],
-  ['new account (models)', 'dark,new,tab=models', ['No models']],
+  ['low balance', 'dark,low', ['days left', 'until around']],
+  ['new account (usage)', 'dark,new', ['No models', 'No recent spend']],
   ['new account (keys)', 'dark,new,tab=keys', ['No API keys']],
-  ['new account (ledger)', 'dark,new,tab=ledger', ['No days with activity']],
   ['offline', 'dark,offline', ["Couldn't load your usage"]],
 ]
 // Seeds the panel's remembered range/measure in a temp copy, since the hash only picks tab and state.
@@ -143,10 +140,10 @@ section('HTML injection')
   hits >= 3 ? pass(`poisoned ${hits} mock names`) : fail(`could not find the mock names to poison (${hits}); update the list in this script`)
   const f = join(tmp, 'poisoned.html')
   writeFileSync(f, poisoned)
-  for (const tab of ['overview', 'models', 'keys', 'ledger', 'settings']) {
+  for (const tab of ['usage', 'keys', 'settings']) {
     let dom
     try {
-      ;({ dom } = dump(chrome, f, `dark,tab=${tab}${tab === 'models' ? ',drawer' : ''}`))
+      ;({ dom } = dump(chrome, f, `dark,tab=${tab}`))
     } catch (e) {
       fail(`${tab}: ${e.message}`)
       continue
@@ -182,97 +179,135 @@ const report = (results) => results.forEach(([name, ok]) => (ok ? pass(name) : f
 
 try {
   report(drive('dark', `
-    for (const [tab, marker] of [['models', 'across'], ['keys', 'API keys'], ['ledger', 'Daily ledger'], ['settings', 'Connection'], ['overview', 'Daily spend']]) {
+    localStorage.clear();
+    for (const [tab, marker] of [['keys', 'API keys'], ['settings', 'Connection'], ['usage', 'Token mix']]) {
       await click('[data-act="tab"][data-val="' + tab + '"]');
       check('the ' + tab + ' tab shows its content', txt().includes(marker));
     }
-    await click('[data-act="range"][data-val="7d"]'); await wait(400);
-    check('switching to 7d updates the labels', /Last 7 days/.test(txt()));
-    await click('[data-act="measure"][data-val="tokens"]'); await wait(400);
-    check('switching to tokens retitles the chart', /Daily tokens/.test(txt()));
-    await click('[data-act="tab"][data-val="models"]');
-    await click('[data-act="model-open"]'); await wait(300);
-    const dlg = $('[role="dialog"]');
-    check('a model row opens the drawer', !!dlg && /Requests/.test(dlg.innerText));
-    if (dlg) { dlg.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); await wait(300); }
-    check('Escape closes the drawer', !$('[role="dialog"]'));
-    await click('[data-act="tab"][data-val="overview"]');
-    window.scrollTo(0, 260); await wait(200);
+    await click('[data-act="range"][data-val="7d"]'); await wait(500);
+    check('switching to 7D updates the labels', /last 7 days/.test(txt()));
+    await click('[data-act="measure"][data-val="tokens"]'); await wait(500);
+    check('switching to Tokens retitles the chart', $('#h-spend') && $('#h-spend').textContent === 'Tokens');
+    await click('[data-act="measure"][data-val="cost"]'); await wait(500);
+    await click('[data-act="model"]'); await wait(200);
+    check('clicking a model opens its details inline', !!$('.mdetail') && /Requests/.test($('.mdetail').innerText) && /Cache hit/.test($('.mdetail').innerText));
+    check('a selected model is drawn in the chart', !!$('.chart.sel') && !!$('.chart .b-model'));
+    await click('[data-act="model"][aria-expanded="true"]'); await wait(200);
+    check('clicking it again closes the details', !$('.mdetail'));
+    window.scrollTo(0, 400); await wait(200);
     const before = window.scrollY;
     window.orca.emit('report.changed', { at: Date.now() }); await wait(900);
     check('a background refresh does not move the scroll position', before > 100 && Math.abs(window.scrollY - before) < 5);
     window.scrollTo(0, 0);
     await click('[data-act="tab"][data-val="settings"]');
+    await click('[data-act="replace"]');
     const key = $('#mgmt'); key.value = 'sk-or-v1-half-typed'; key.focus();
-    window.orca.emit('report.changed', { at: Date.now() }); await wait(900); // what a finished worker refresh sends
+    window.orca.emit('report.changed', { at: Date.now() }); await wait(900);
     check('a key being typed survives a background refresh', $('#mgmt') && $('#mgmt').value === 'sk-or-v1-half-typed');
-    const mins = document.querySelector('[data-fk="set:refreshMinutes"]');
+    const mins = $('[data-fk="set:refreshMinutes"]');
     if (mins) { mins.focus(); mins.value = '4'; window.orca.emit('report.changed', { at: Date.now() }); await wait(900); }
-    const mins2 = document.querySelector('[data-fk="set:refreshMinutes"]');
+    const mins2 = $('[data-fk="set:refreshMinutes"]');
     check('a number being typed survives a background refresh', !!mins2 && mins2.value === '4');
     await click('[data-act="disconnect-ask"]');
     check('Disconnect asks for confirmation first', !!$('[data-act="disconnect-yes"]'));
     await click('[data-act="disconnect-no"]');
-    check('cancelling keeps the connection', !$('[data-act="disconnect-yes"]') && /Connected as/.test(txt()));
-    const sel = [...document.querySelectorAll('select')].find((s) => /Status bar shows/.test((s.closest('label') || s.parentElement || {}).innerText || ''));
+    check('cancelling keeps the connection', !$('[data-act="disconnect-yes"]') && /Management key, stored/.test(txt()));
     const toggle = $('[data-set="statusBar"]');
-    if (toggle && sel) { toggle.click(); await wait(400); check('the status bar picker is disabled while the status bar is off', !!document.querySelector('select[disabled]')); }
-    else check('status bar picker and toggle exist', false);
+    if (toggle) { toggle.click(); await wait(700); check('the status bar picker is disabled while the status bar is off', !!document.querySelector('select[data-set="statusBarContent"][disabled]')); toggle && $('[data-set="statusBar"]').click(); await wait(500); }
+    else check('the status bar toggle exists', false);
   `))
   report(drive('dark', `
-    const tip = () => $('#tip');
-    const hover = (el) => { el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); };
-    await click('[data-act="measure"][data-val="cost"]'); await click('[data-act="range"][data-val="30d"]'); await wait(400);
-    const bars = [...document.querySelectorAll('.chart .col[data-tip]')];
-    check('the daily chart has bars to hover (' + bars.length + ')', bars.length > 2);
-    const done = bars[bars.length - 2];
-    if (done) { hover(done); await wait(150); }
-    check('a chart bar tooltip lists every model that day, with no Other row', !!done && !tip().hidden && !/\\bOther\\b/.test(tip().innerText) && /llama-3.3-70b-instruct/.test(tip().innerText));
-    const today = bars[bars.length - 1];
-    if (today) { hover(today); await wait(150); }
-    check('the partial today bar is not labelled as Other', !!today && /not split yet/.test(tip().innerText) && !/\\bOther\\b/.test(tip().innerText));
-    await click('[data-act="tab"][data-val="ledger"]');
-    const rows = [...document.querySelectorAll('.lg-row')];
-    check('every ledger row carries a split tooltip and is focusable', rows.length > 0 && rows.every((r) => r.dataset.tip && r.tabIndex === 0));
-    const past = rows.find((r) => !r.classList.contains('partial'));
-    if (past) { hover(past); await wait(150); }
-    check('hovering a ledger day shows its split per model', !!past && !tip().hidden && /Total/.test(tip().innerText) && tip().querySelectorAll('.row').length >= 3 && !/\\bOther\\b/.test(tip().innerText) && /llama-3.3-70b-instruct/.test(tip().innerText));
-    if (past) { past.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body })); await wait(100); }
-    check('leaving a ledger row hides the tooltip', tip().hidden);
+    localStorage.clear();
+    await click('[data-act="range"][data-val="30d"]'); await click('[data-act="measure"][data-val="cost"]'); await wait(600);
+    const over = (el) => el.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+    const bars = () => [...document.querySelectorAll('.chart .hit')];
+    check('the chart has a bar for each day', bars().length >= 30);
+    const day = bars()[bars().length - 3];
+    over(day); await wait(150);
+    check('hovering a day shows that day in the readout', /\\d+ models?/.test($('#u-readout').innerText) && !/last 30 days/.test($('#u-readout').innerText));
+    check('hovering a day switches Models and Token mix to that day', !/last 30 days/.test($('#h-models').innerText) && !/last 30 days/.test($('#h-mix').innerText));
+    day.parentNode.querySelector('.hit').dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: document.body })); await wait(150);
+    check('leaving the chart goes back to the range', /last 30 days/.test($('#h-models').innerText));
+    bars()[bars().length - 3].dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(250);
+    check('clicking a bar selects the day', !!$('[data-act="unpin"]') && !!$('.chart .col.dim'));
+    over(bars()[2]); await wait(150);
+    check('a selected day stays while hovering other bars', !!$('[data-act="unpin"]'));
+    $('.chart .hit[tabindex="0"]').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })); await wait(250);
+    check('arrow keys move the selection', !!$('[data-act="unpin"]'));
+    await click('[data-act="unpin"]');
+    check('the chip clears the selection', !$('[data-act="unpin"]') && /last 30 days/.test($('#h-models').innerText));
+    const today = bars()[bars().length - 1];
+    today.dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(250);
+    check('today has no per-model split yet and says so', /after the day ends/.test($('#u-models').innerText));
+    await click('[data-act="unpin"]');
+    const cells = [...document.querySelectorAll('.heat .cell')];
+    check('the heatmap covers 26 weeks', cells.length === 182);
+    const old = cells[cells.length - 45];
+    old.dispatchEvent(new MouseEvent('click', { bubbles: true })); await wait(1200);
+    check('a heatmap day outside the range widens it and selects the day', $('[data-act="range"][data-val="all"]').getAttribute('aria-checked') === 'true' && !!$('[data-act="unpin"]') && !!$('.heat .cell.pinned'));
+    const warns = () => document.querySelectorAll('.attn').length;
+    const n = warns();
+    await click('[data-act="dismiss-warn"]');
+    check('a warning closes with its X', n > 0 && warns() === n - 1);
+    window.orca.emit('report.changed', { at: Date.now() }); await wait(900);
+    check('a closed warning stays closed after a refresh', warns() === n - 1);
+    check('warnings have no links', ![...document.querySelectorAll('.attn')].some((w) => w.querySelector('a, [data-act="tab"]')));
   `))
-  report(drive('dark,tab=models,many', `
-    const rows = () => document.querySelectorAll('[data-act="model-open"]').length;
-    check('only the top 8 models show at first', rows() === 8);
+  report(drive('dark,tab=keys', `
+    localStorage.clear();
+    await click('[data-act="krange"][data-val="30d"]');
+    const total = () => ($('.klist') ? $('.klist').parentNode.querySelector('.fine').innerText : '');
+    const t30 = total();
+    await click('[data-act="krange"][data-val="7d"]');
+    check('Keys has its own range switch', /last 7 days/.test($('#h-keys').innerText) && total() !== t30);
+    await click('[data-act="krange"][data-val="all"]');
+    check('All shows lifetime key spend', /all time/.test($('#h-keys').innerText));
+    await click('[data-act="tab"][data-val="usage"]');
+    await click('[data-act="range"][data-val="30d"]'); await wait(500);
+    await click('[data-act="tab"][data-val="keys"]');
+    check('the Keys range is kept apart from Usage', /all time/.test($('#h-keys').innerText));
+    await click('[data-act="tab"][data-val="usage"]');
+    check('and Usage keeps its own range', $('[data-act="range"][data-val="30d"]').getAttribute('aria-checked') === 'true');
+    await click('[data-act="tab"][data-val="keys"]');
+    await click('[data-act="inactive"]');
+    check('inactive keys expand', /Disabled/.test(txt()));
+  `))
+  report(drive('dark,many', `
+    localStorage.clear();
+    const rows = () => document.querySelectorAll('[data-act="model"]').length;
+    check('only the top 6 models show at first', rows() === 6);
     await click('[data-act="models-more"]');
-    check('"Show more" reveals the rest (13 in all)', rows() === 13);
-    check('the toggle now offers "Show less"', /Show less/.test(txt()));
+    check('"N more models" reveals the rest (13 in all)', rows() === 13);
+    check('the toggle now offers the top 6 only', /top 6 only/.test(txt()));
     await click('[data-act="models-more"]');
-    check('"Show less" collapses back to 8', rows() === 8);
+    check('collapsing goes back to 6', rows() === 6);
   `))
   report(drive('dark,setup', `
     const input = $('#mgmt');
     check('setup shows the key form', !!input);
     input.value = 'bad'; await click('[data-act="save-keys"]'); await wait(600);
     check('a rejected key shows its error and stays on setup', !!$('#mgmt') && /rejected|not|invalid|Enter|error/i.test(txt()));
-    $('#mgmt').value = 'sk-or-v1-good'; await click('[data-act="save-keys"]'); await wait(1200);
-    check('a verified key leads to the dashboard', !!$('[data-act="tab"][data-val="overview"]'));
+    $('#mgmt').value = 'sk-or-v1-good'; await click('[data-act="save-keys"]'); await wait(1500);
+    check('a verified key leads to the dashboard', !!$('[data-act="tab"][data-val="usage"]'));
   `))
   report(drive('dark', `
     let offered = null;
     window.orca.files = { async saveAs(options) { offered = options; return { status: 'saved' }; } };
-    await click('[data-act="export"]'); await wait(700);
-    check('CSV export offers a daily CSV through the save dialog', offered && /daily/.test(offered.suggestedName) && /spend_usd/.test(offered.data));
+    const exp = async (kind) => { await click('[data-act="menu"]'); await click('[data-act="export"][data-val="' + kind + '"]'); await wait(700); };
+    await exp('daily');
+    check('the ⋯ menu exports a daily CSV through the save dialog', offered && /daily/.test(offered.suggestedName) && /spend_usd/.test(offered.data));
     check('a saved CSV reports success', /CSV saved/.test(txt()));
-    const kind = $('[data-export-kind]');
-    if (kind) kind.value = 'models';
-    await click('[data-act="export"]'); await wait(700);
-    check('the export picker can choose models', offered && /models/.test(offered.suggestedName));
+    await exp('models');
+    check('the menu can export models', offered && /models/.test(offered.suggestedName));
     window.orca.files.saveAs = async () => ({ status: 'cancelled' });
-    await click('[data-act="export"]'); await wait(700);
+    await exp('keys');
     check('cancelling the save dialog is not reported as success', /Export cancelled/.test(txt()) && !/CSV saved/.test(txt()));
     window.orca.files.saveAs = async () => { throw new Error('disk unavailable'); };
-    await click('[data-act="export"]'); await wait(700);
-    check('a save error is visible and exporting can be retried', /Export failed: disk unavailable/.test(txt()) && !$('[data-act="export"]').disabled);
+    await exp('daily');
+    check('a save error is visible and exporting can be retried', /Export failed: disk unavailable/.test(txt()) && !$('[data-act="menu"]').disabled);
+    await click('[data-act="menu"]');
+    document.body.click(); await wait(250);
+    check('clicking elsewhere closes the menu', !$('.menu'));
     document.documentElement.style.setProperty('--orca-font-sans', 'monospace');
     check('the panel follows Orca font preferences', getComputedStyle(document.body).fontFamily.includes('monospace'));
   `))
@@ -281,12 +316,12 @@ try {
     check('Settings has an optional monthly budget', !!budget && +budget.value === 0);
     if (budget) {
       budget.value = '100'; budget.dispatchEvent(new Event('change', { bubbles: true })); await wait(900);
-      await click('[data-act="tab"][data-val="overview"]'); await wait(800);
-      check('saving a monthly budget shows progress on Overview', !!$('[aria-label="Monthly budget used"]') && /of \\$100.00/.test(txt()));
+      await click('[data-act="tab"][data-val="usage"]'); await wait(800);
+      check('saving a monthly budget shows progress on Usage', !!$('[aria-label="Monthly budget used"]') && /Budget \\$100.00/.test(txt()));
       await click('[data-act="tab"][data-val="settings"]'); await wait(500);
       const input = $('[data-set="monthlyBudgetUsd"]');
       input.value = '0'; input.dispatchEvent(new Event('change', { bubbles: true })); await wait(900);
-      await click('[data-act="tab"][data-val="overview"]'); await wait(800);
+      await click('[data-act="tab"][data-val="usage"]'); await wait(800);
       check('setting the monthly budget to zero hides progress', !$('[aria-label="Monthly budget used"]'));
     }
   `))

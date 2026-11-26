@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- Optional **DeepSeek** balance. Add a DeepSeek API key under Settings → Account, and a DeepSeek card appears on Usage. It shows your balance per currency (topped up and granted), how many days it lasts at your recent rate, and a Top up link. Without a key nothing DeepSeek-related is shown.
+- DeepSeek only reports a balance, not usage, so the rate comes from balance readings taken at each refresh over the last 7 days. Top-ups are ignored, and a rate needs about 12 hours of readings.
+- Warnings under the banner when the DeepSeek balance is used up, has about 3 days or less left, or the key is rejected.
+- The DeepSeek key is verified, stored in Orca's encrypted secrets and only used for `GET https://api.deepseek.com/user/balance`. Removing it forgets the key and every reading.
+- Fixed: changing a setting right after opening Settings could be undone by the settings loading in.
+
 ## 1.3.0
 
 A redesign: one answer first, detail on demand.

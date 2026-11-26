@@ -3,7 +3,7 @@ import { assert, mockHost, mountWorker, test } from 'orca/testing'
 // @ts-ignore node typings are not shipped with Orca's test kit
 import { readFileSync } from 'node:fs'
 import * as main from './worker'
-import type { Report, Settings, Status } from './protocol'
+import type { DeepSeekView, Report, Settings, Status } from './protocol'
 
 const fixture = (name: string): unknown =>
   JSON.parse(readFileSync(new URL(`../tests/fixtures/${name}.json`, import.meta.url), 'utf8'))
@@ -429,3 +429,72 @@ test('the status bar says so when the first refresh could not reach OpenRouter',
   assert.equal(lastBar(host).text, 'OpenRouter: unavailable')
   assert.equal(lastBar(host).tone, 'warning')
 })
+
+// ---- the optional DeepSeek account ----
+
+const DS = 'sk-deepseek-test-key-1234'
+// OpenRouter from the fixtures, plus DeepSeek's balance endpoint with a settable total.
+function withDeepSeek(state: { total: string; status?: number; calls?: number }): typeof fetch {
+  const or = fakeFetch()
+  return (async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = new URL(String(input))
+    if (url.host === 'api.deepseek.com') {
+      state.calls = (state.calls ?? 0) + 1
+      if (state.status) return new Response('{}', { status: state.status })
+      return new Response(JSON.stringify({ is_available: true, balance_infos: [{ currency: 'USD', total_balance: state.total, granted_balance: '0.00', topped_up_balance: state.total }] }), { status: 200 })
+    }
+    return or(input, init)
+  }) as typeof fetch
+}
+
+test('DeepSeek stays hidden until a key is saved', async () => {
+  const { worker } = await connected()
+  assert.equal(await worker.request('deepseek.get'), null)
+})
+
+test('a DeepSeek key is verified, stored as a secret and shown masked with its balance', async () => {
+  const { host, worker } = await connected()
+  const ds = { total: '12.50' }
+  const res = await withFetch(withDeepSeek(ds), () => worker.request('deepseek.save', { apiKey: DS }))
+  assert.deepEqual(res, { ok: true, label: 'sk-…1234' })
+  assert.equal(host.data().secrets.deepseekKey, DS)
+  assert.ok(!JSON.stringify(host.data().storage).includes(DS))
+  const view = (await worker.request('deepseek.get')) as DeepSeekView
+  assert.equal(view.label, 'sk-…1234')
+  assert.equal(view.available, true)
+  assert.equal(view.balances[0].total, 12.5)
+  assert.equal(view.balances[0].burnPerDay, null) // one reading is not enough for a rate
+})
+
+test('a rejected DeepSeek key is not stored', async () => {
+  const { host, worker } = await connected()
+  const res = await withFetch(withDeepSeek({ total: '1', status: 401 }), () => worker.request('deepseek.save', { apiKey: DS }))
+  assert.deepEqual(res, { ok: false, error: 'DeepSeek rejected this key. It may be mistyped or revoked.' })
+  assert.equal(host.data().secrets.deepseekKey, undefined)
+  assert.equal(await worker.request('deepseek.get'), null)
+})
+
+test('refreshes read the DeepSeek balance, and its failures do not fail the refresh', async () => {
+  const { worker } = await connected()
+  const ds = { total: '12.50', calls: 0 }
+  await withFetch(withDeepSeek(ds), () => worker.request('deepseek.save', { apiKey: DS }))
+  ds.total = '11.00'
+  await withFetch(withDeepSeek(ds), () => worker.request('refresh'))
+  assert.equal(((await worker.request('deepseek.get')) as DeepSeekView).balances[0].total, 11)
+  const down = { total: '0', status: 503 }
+  const res = await withFetch(withDeepSeek(down), () => worker.request('refresh'))
+  assert.equal((res as { ok: boolean }).ok, true)
+  const view = (await worker.request('deepseek.get')) as DeepSeekView
+  assert.equal(view.balances[0].total, 11) // the last good reading stays
+  assert.ok(view.error?.includes('DeepSeek had a problem'))
+})
+
+test('removing the DeepSeek key forgets the key and everything read with it', async () => {
+  const { host, worker } = await connected()
+  await withFetch(withDeepSeek({ total: '5' }), () => worker.request('deepseek.save', { apiKey: DS }))
+  assert.deepEqual(await worker.request('deepseek.clear'), { ok: true })
+  assert.equal(host.data().secrets.deepseekKey, undefined)
+  assert.ok(!Object.keys(host.data().storage).some((k) => k.startsWith('ds')))
+  assert.equal(await worker.request('deepseek.get'), null)
+})
+

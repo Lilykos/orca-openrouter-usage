@@ -97,6 +97,8 @@ const views = [
   ['new account (usage)', 'dark,new', ['No models', 'No recent spend']],
   ['new account (keys)', 'dark,new,tab=keys', ['No API keys']],
   ['offline', 'dark,offline', ["Couldn't load your usage"]],
+  ['DeepSeek card with a saved key', 'dark,deepseek', ['DeepSeek', 'balance', 'days left at', 'Top up', 'Topped up']],
+  ['DeepSeek low warning', 'light,deepseek-low', ['DeepSeek has about 2 days left']],
 ]
 // Seeds the panel's remembered range/measure in a temp copy, since the hash only picks tab and state.
 function seeded(prefs) {
@@ -338,6 +340,24 @@ try {
     check('the panel follows Orca font preferences', getComputedStyle(document.body).fontFamily.includes('monospace'));
   `))
   report(drive('dark,tab=settings', `
+    await click('[data-act="tab"][data-val="usage"]');
+    check('without a DeepSeek key there is no DeepSeek card', !$('#h-ds') && !/DeepSeek/.test($('.warns') ? $('.warns').innerText : ''));
+    await click('[data-act="tab"][data-val="settings"]');
+    check('Settings offers DeepSeek as optional', /DeepSeek · optional/.test(txt()));
+    await click('[data-act="ds-add"]');
+    $('#ds-key').value = 'bad'; await click('[data-act="ds-save"]'); await wait(600);
+    check('a rejected DeepSeek key shows its error', /DeepSeek rejected this key/.test(txt()) && !!$('#ds-key'));
+    $('#ds-key').value = 'sk-good-deepseek-key'; await click('[data-act="ds-save"]'); await wait(900);
+    check('a verified DeepSeek key is shown masked', /sk-…-key/.test(txt()) && /verified and saved/.test(txt()));
+    await click('[data-act="tab"][data-val="usage"]');
+    check('and its balance card appears on Usage', !!$('#h-ds') && /\\$12.50/.test($('#h-ds').closest('section').innerText));
+    await click('[data-act="tab"][data-val="settings"]');
+    await click('[data-act="ds-remove"]');
+    check('removing the DeepSeek key asks first', !!$('[data-act="ds-remove-yes"]'));
+    await click('[data-act="ds-remove-yes"]'); await wait(600);
+    await click('[data-act="tab"][data-val="usage"]');
+    check('removing it hides the card again', !$('#h-ds'));
+    await click('[data-act="tab"][data-val="settings"]');
     const top = () => $('.banner[aria-label="Credits"]').className;
     const preview = () => document.querySelectorAll('.bn-preview');
     check('Settings shows exactly one banner preview', preview().length === 1 && preview()[0].getAttribute('aria-hidden') === 'true' && !preview()[0].querySelector('[data-fk]'));

@@ -1,14 +1,18 @@
 // The plugin's worker: owns the API keys, the network, the cache and the alerts. The panel only
 // asks it for finished reports (src/protocol.ts) and never sees a key.
 import type { OrcaWorkerApi } from 'orca/worker'
-import type { BannerColor, DayRow, KeyInfo, Measure, Range, Report, Settings, Status, StatusBarContent } from './protocol'
+import type { BannerColor, DayRow, DeepSeekView, KeyInfo, Measure, Range, Report, Settings, Status, StatusBarContent } from './protocol'
 import { OpenRouterError, createClient, getActivity, getCredits, getKeyActivity, getKeyMeta, listKeys } from './core/openrouter'
 import { buildReport, keyMayHaveRecentActivity, normalizeActivity, normalizeKeys, todaySpend } from './core/report'
 import { addSnapshot, mergeDays, pruneRows, type Snapshot } from './core/history'
+import { addSnapshots, burnPerDay, describeDeepSeekError, getBalance, maskKey, DeepSeekError, type DeepSeekAccount, type DeepSeekSnapshot } from './core/deepseek'
 import { reportCsv } from './core/csv'
 
 const MGMT_KEY = 'mgmtKey'
 const KEY_LABEL = 'keyLabel'
+const DS_KEY = 'deepseekKey'
+/** Storage for the optional DeepSeek account; all of it goes when its key is removed. */
+const DS_STORE = ['dsLabel', 'dsCache', 'dsSnapshots', 'dsMeta']
 
 interface Cache {
   credits: { totalCredits: number; totalUsage: number } | null
@@ -342,6 +346,7 @@ export default function activate(orca: OrcaWorkerApi): void {
       }
       await updateStatusBar()
       if (outcome.ok) await checkAlerts()
+      await refreshDeepSeek()
     } catch (e) {
       orca.log(`post-refresh step failed: ${e instanceof Error ? e.message : 'error'}`)
     }
@@ -385,6 +390,79 @@ export default function activate(orca: OrcaWorkerApi): void {
     ;(handle as unknown as { unref?: () => void }).unref?.()
     timer = handle
   }
+
+  // ---- optional DeepSeek account: balance only; its failures never fail the OpenRouter refresh ----
+  type DsMeta = { error: string | null; authFailed: boolean }
+  let dsEpoch = 0
+
+  async function refreshDeepSeek(): Promise<void> {
+    const key = await orca.secrets.get(DS_KEY)
+    if (!key) return
+    const mine = dsEpoch
+    try {
+      const account = await getBalance(key)
+      if (mine !== dsEpoch) return
+      const now = Date.now()
+      await orca.storage.set('dsCache', { ...account, at: now } as never)
+      await orca.storage.set('dsSnapshots', addSnapshots(await load<DeepSeekSnapshot[]>('dsSnapshots', []), account, now) as never)
+      await orca.storage.set('dsMeta', { error: null, authFailed: false } as never)
+    } catch (e) {
+      if (mine !== dsEpoch) return
+      orca.log(`deepseek refresh failed: ${e instanceof DeepSeekError ? e.code : 'error'}`)
+      await orca.storage.set('dsMeta', { error: describeDeepSeekError(e), authFailed: e instanceof DeepSeekError && e.code === 'unauthorized' } as never)
+    }
+  }
+
+  async function deepSeekView(): Promise<DeepSeekView | null> {
+    if (!(await orca.secrets.get(DS_KEY))) return null
+    const cache = await load<(DeepSeekAccount & { at: number }) | null>('dsCache', null)
+    const snaps = await load<DeepSeekSnapshot[]>('dsSnapshots', [])
+    const meta = await load<DsMeta>('dsMeta', { error: null, authFailed: false })
+    const now = Date.now()
+    return {
+      label: await load<string>('dsLabel', 'DeepSeek key'),
+      available: cache ? cache.available : null,
+      balances: (cache?.balances ?? []).map((b) => {
+        const burn = burnPerDay(snaps, b.currency, now)
+        return { ...b, burnPerDay: burn, daysLeft: burn && burn > 0 ? b.total / burn : null }
+      }),
+      updatedAt: cache ? cache.at : null,
+      error: meta.error,
+      authFailed: meta.authFailed,
+    }
+  }
+
+  orca.panels.handle('deepseek.get', () => deepSeekView())
+
+  orca.panels.handle('deepseek.save', async ({ apiKey }) => {
+    const key = String(apiKey ?? '').trim()
+    if (!key || /\s/.test(key)) return { ok: false as const, error: 'Enter your DeepSeek API key.' }
+    let account: DeepSeekAccount
+    try {
+      account = await getBalance(key)
+    } catch (e) {
+      return { ok: false as const, error: describeDeepSeekError(e) }
+    }
+    dsEpoch++
+    for (const k of DS_STORE) await orca.storage.delete(k)
+    await orca.secrets.set(DS_KEY, key)
+    const now = Date.now()
+    const label = maskKey(key)
+    await orca.storage.set('dsLabel', label as never)
+    await orca.storage.set('dsCache', { ...account, at: now } as never)
+    await orca.storage.set('dsSnapshots', addSnapshots([], account, now) as never)
+    await orca.storage.set('dsMeta', { error: null, authFailed: false } as never)
+    orca.panels.post('report.changed', { at: now })
+    return { ok: true as const, label }
+  })
+
+  orca.panels.handle('deepseek.clear', async () => {
+    dsEpoch++
+    await orca.secrets.delete(DS_KEY)
+    for (const k of DS_STORE) await orca.storage.delete(k)
+    orca.panels.post('report.changed', { at: Date.now() })
+    return { ok: true as const }
+  })
 
   orca.panels.handle('status.get', () => status())
 

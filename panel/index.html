@@ -208,6 +208,18 @@ html.light .ucard { background: color-mix(in srgb, var(--fg) 1.8%, var(--bg)); }
 .coll[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .coll:hover .chev { color: var(--fg); }
 .coll-h + * { margin-top: 8px; }
+.ds-row { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 12px; }
+.ds-row + .ds-row { border-top: 1px solid var(--hair); padding-top: 8px; margin-top: 8px; }
+.ds-v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 8px; }
+.ds-s { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.ds-s.warn { color: var(--warn); }
+.ds-s svg { vertical-align: -2px; margin-right: 4px; }
+.ds-split { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ds-foot .link { white-space: nowrap; flex: none; }
+.ds-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--hair); }
+.ds-sec { border-top: 1px solid var(--hair); padding: 10px 0 10px; }
+.ds-sec .t { font-size: 13px; font-weight: 500; }
+.ds-sec .d { font-size: 12px; color: var(--muted); margin: 1px 0 8px; }
 /* models */
 .mbox { height: 262px; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; padding: 0 6px; margin-left: -6px; margin-right: -6px; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .mbox::-webkit-scrollbar { width: 6px; }
@@ -349,6 +361,8 @@ html:not(.light) .kav { color: hsl(var(--h) 70% 72%); background: hsl(var(--h) 5
 'use strict';
 
 const KEYS_URL = 'https://openrouter.ai/settings/management-keys';
+const DS_KEYS_URL = 'https://platform.deepseek.com/api_keys';
+const DS_TOPUP_URL = 'https://platform.deepseek.com/top_up';
 const CREDITS_URL = 'https://openrouter.ai/settings/credits';
 const PREF_KEY = 'openrouter-usage:prefs';
 const DISMISS_KEY = 'openrouter-usage:dismissed';
@@ -409,6 +423,10 @@ const state = {
   pendingPin: null,        // a heatmap day to pin once the wider range has loaded
   model: null,             // model selected in the list (range mode)
   keyOpen: null,
+  ds: null,                // the optional DeepSeek account, or null when no DeepSeek key is saved
+  dsAddOpen: false,
+  dsMsg: null,             // { ok, text }
+  dsConfirm: false,
   smallKeys: false,        // show the keys under 1% of spend           // key hash whose details are open
   heatFocus: null,
   open: { mix: false, heat: false, inactive: false }   // collapsible Usage sections; closed until opened, then remembered
@@ -454,6 +472,8 @@ function compact(n) {
 // Shares: whole percents, one decimal under 10%, "<1%" for slivers.
 const pct = (v) => (v == null || !isFinite(v) ? '—' : v >= 0.995 ? '100%' : v >= 0.095 ? Math.round(v * 100) + '%' : v >= 0.005 ? (v * 100).toFixed(1).replace(/\.0$/, '') + '%' : v > 0 ? '<1%' : '0%');
 const fmtV = (v) => (TOK() ? compact(v) : money(v));
+// DeepSeek balances come in USD or CNY.
+const cur = (v, c) => (c === 'USD' ? money(v) : c === 'CNY' ? money(v).replace('$', '¥') : money(v).replace('$', '') + ' ' + c);
 const splitName = (id) => { const s = String(id == null ? '' : id); const i = s.indexOf('/'); return i < 0 ? ['', s] : [s.slice(0, i + 1), s.slice(i + 1)]; };
 
 const utcToday = () => new Date().toISOString().slice(0, 10);
@@ -558,6 +578,15 @@ function warnings(rep) {
     else if (h.limit === 'near') out.push({ id: `key:${k.hash}:near`, tone: 'warn', html: `${n} has used ${pct(h.usedFraction)} of its ${esc(money(k.limit))}${k.limitReset ? ' ' + RESET[k.limitReset] : ''} limit` });
     if (h.expiry === 'expiring' && k.expiresAt) out.push({ id: `key:${k.hash}:expiring`, tone: 'warn', html: `${n} expires ${esc(dLong(k.expiresAt.slice(0, 10)))}` });
     else if (h.expiry === 'expired') out.push({ id: `key:${k.hash}:expired`, tone: 'danger', html: `${n} has expired` });
+  }
+  const ds = state.ds;
+  if (ds) {
+    if (ds.authFailed) out.push({ id: 'ds:auth', tone: 'danger', html: '<b>DeepSeek</b> rejected the saved key. Replace it in Settings.' });
+    else if (ds.available === false) out.push({ id: 'ds:empty:' + today, tone: 'danger', html: 'Your <b>DeepSeek</b> balance is used up' });
+    else {
+      const low = ds.balances.find((b) => b.daysLeft != null && b.daysLeft <= 3);
+      if (low) out.push({ id: 'ds:runway:' + today, tone: 'warn', html: `<b>DeepSeek</b> has about ${Math.max(0, Math.round(low.daysLeft))} day${Math.round(low.daysLeft) === 1 ? '' : 's'} left` });
+    }
   }
   const budget = rep.monthlyBudgetUsd;
   const t = rep.tiles;
@@ -782,9 +811,32 @@ function mixHtml(rep) {
     </div></div>`;
 }
 
+// Only when a DeepSeek key is saved. DeepSeek reports a balance, not usage, so this is all there is to show.
+function deepSeekCardHtml() {
+  const ds = state.ds;
+  if (!ds) return '';
+  const upd = ds.updatedAt ? `<span data-rel="${ds.updatedAt}" data-prefix="Updated ">Updated ${relTime(ds.updatedAt)}</span>` : '';
+  let body;
+  if (!ds.balances.length) body = `<p class="note-row">${esc(ds.error || 'Waiting for the first balance reading.')}</p>`;
+  else body = ds.balances.map((b) => {
+    const runway = b.daysLeft != null
+      ? `About ${Math.round(b.daysLeft)} day${Math.round(b.daysLeft) === 1 ? '' : 's'} left at ${esc(cur(b.burnPerDay, b.currency))} a day`
+      : b.burnPerDay === 0 ? 'No spend in the last 7 days' : 'Days left appear after about 12 hours of readings';
+    const short = b.daysLeft != null && b.daysLeft <= 3;
+    return `<div class="ds-row"><div class="ds-main"><div class="ds-v">${esc(cur(b.total, b.currency))}${ds.available === false ? ' <span class="badge danger">Used up</span>' : ''}</div><div class="ds-s${short ? ' warn' : ''}">${short ? ICON.warn : ''}${runway}</div></div>
+      <div class="ds-split"><span>Topped up ${esc(cur(b.toppedUp, b.currency))}</span><span>Granted ${esc(cur(b.granted, b.currency))}</span></div></div>`;
+  }).join('');
+  const err = ds.error && ds.balances.length ? `<p class="fine err-t" style="margin-top:6px">${esc(ds.error)} Showing the last reading.</p>` : '';
+  return `<section class="ucard" aria-labelledby="h-ds">
+    <div class="sec-h"><h2 id="h-ds">DeepSeek <span class="scope">· balance</span></h2><span class="side">${upd}</span></div>
+    ${body}${err}
+    <div class="ds-foot"><span class="fine">DeepSeek reports a balance only, so there is no per-model or daily breakdown.</span><button type="button" class="link" data-act="ds-topup" data-fk="ds-topup">Top up ${ICON.ext}</button></div>
+  </section>`;
+}
+
 function usageHtml(rep) {
   const seg = (list, cur, act, label) => `<div class="seg sm" role="radiogroup" aria-label="${label}">${list.map(([v, l]) => `<button type="button" role="radio" aria-checked="${cur === v}" tabindex="${cur === v ? 0 : -1}" data-act="${act}" data-val="${v}" data-fk="${act}:${v}">${l}</button>`).join('')}</div>`;
-  return `${todayMonthHtml(rep)}
+  return `${todayMonthHtml(rep)}${deepSeekCardHtml()}
     <section class="ucard" aria-labelledby="h-spend">
       <div class="sec-h"><h2 id="h-spend">${TOK() ? 'Tokens' : 'Spend'}</h2><div class="ctl">${seg(RANGES, state.range, 'range', 'Range')}${seg(MEASURES, state.measure, 'measure', 'Measure')}</div></div>
       <div id="u-readout">${readoutHtml(rep)}</div>
@@ -1041,6 +1093,27 @@ function keyFormHtml(primaryLabel) {
   </div>`;
 }
 
+function deepSeekSettingsHtml() {
+  const ds = state.ds;
+  const m = state.dsMsg;
+  const msg = `<p id="ds-msg" class="msg${m ? (m.ok ? ' ok-t' : ' err-t') : ''}"${m && !m.ok ? ' role="alert"' : ' role="status"'}>${m ? esc(m.text) : ''}</p>`;
+  const form = `<div class="keyform">
+      <label class="sr-only" for="ds-key">DeepSeek API key</label>
+      <input id="ds-key" type="password" placeholder="Paste a DeepSeek API key" autocomplete="off" autocapitalize="off" spellcheck="false" data-fk="ds-key">
+      <div class="acts"><button type="button" class="btn primary" id="ds-save" data-act="ds-save" data-fk="ds-save">Verify &amp; save</button><button type="button" class="link" data-act="ds-open-keys" data-fk="ds-open-keys">Get a DeepSeek key ${ICON.ext}</button></div>
+      ${msg}</div>`;
+  if (!ds) {
+    return `<div class="ds-sec"><div class="t">DeepSeek <span class="muted">· optional</span></div><div class="d">Track a DeepSeek balance too. Its card appears on Usage once a key is saved.</div>
+      ${state.dsAddOpen ? form : `<button type="button" class="btn" data-act="ds-add" data-fk="ds-add">Add DeepSeek key</button>${m && m.ok ? msg : ''}`}</div>`;
+  }
+  const remove = state.dsConfirm
+    ? `<div class="confirm"><span>Remove the DeepSeek key from Orca?</span><button type="button" class="btn danger" data-act="ds-remove-yes" data-fk="ds-remove-yes">Remove</button><button type="button" class="btn ghost" data-act="ds-remove-no" data-fk="ds-remove-no">Cancel</button></div>`
+    : `<button type="button" class="btn" data-act="ds-add" data-fk="ds-add" aria-expanded="${state.dsAddOpen}">Replace key</button><button type="button" class="btn ghost danger" data-act="ds-remove" data-fk="ds-remove">Remove</button>`;
+  return `<div class="ds-sec"><div class="t">DeepSeek</div>
+    <div class="conn"><span class="ic"${ds.authFailed ? ' style="color:var(--danger)"' : ''}>${ds.authFailed ? ICON.warn : ICON.check}</span><div class="who"><b>${esc(ds.label)}</b><div>${ds.authFailed ? 'DeepSeek rejected this key. Replace it.' : "API key, stored in Orca's encrypted secrets. Used only to read the balance."}</div></div></div>
+    <div class="conn-acts">${remove}</div>${state.dsAddOpen ? form : m ? msg : ''}</div>`;
+}
+
 function settingsHtml() {
   const st = state.status || {};
   const s = state.settings;
@@ -1058,7 +1131,8 @@ function settingsHtml() {
     <div class="conn"><span class="ic">${ICON.check}</span><div class="who"><b>${esc(st.keyLabel || 'Management key')}</b><div>Management key, stored in Orca's encrypted secrets</div></div></div>
     ${r ? `<p class="conn-res ${r.ok ? 'ok-t' : 'err-t'}" role="${r.ok ? 'status' : 'alert'}">${r.ok ? 'Connected as ' + esc(r.label) : esc(r.error)}</p>` : ''}
     <div class="conn-acts">${conn}</div>
-    ${state.replaceOpen ? keyFormHtml() : ''}`);
+    ${state.replaceOpen ? keyFormHtml() : ''}
+    ${deepSeekSettingsHtml()}`);
   if (!s) return account + `<p class="${state.settingsErr ? 'err-t' : 'muted'}">${state.settingsErr ? 'Could not load settings: ' + esc(state.settingsErr) : 'Loading settings…'}</p>`;
   const look = group('look', 'Appearance', '', `<div class="look">
       <div class="look-ctl">
@@ -1191,7 +1265,7 @@ async function loadReport(quiet) {
   if (!quiet) { state.loading = true; render(); }
   let rep = null, err = null;
   try {
-    rep = await req('report.get', { range: state.range, measure: state.measure });
+    [rep, state.ds] = await Promise.all([req('report.get', { range: state.range, measure: state.measure }), req('deepseek.get').catch(() => state.ds)]);
   } catch (e) {
     err = errMsg(e);
   }
@@ -1272,6 +1346,35 @@ async function saveKeys() {
   }
 }
 
+async function saveDeepSeek() {
+  const el = $('#ds-key'), btn = $('#ds-save');
+  if (!el || !btn || btn.disabled) return;
+  const key = el.value.trim();
+  const say = (ok, text) => { state.dsMsg = { ok, text }; const m = $('#ds-msg'); if (m) { m.className = 'msg ' + (ok ? 'ok-t' : 'err-t'); m.textContent = text; } };
+  if (!key) { say(false, 'Enter your DeepSeek API key first.'); el.focus(); return; }
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
+  let res;
+  try { res = await req('deepseek.save', { apiKey: key }); } catch (e) { res = { ok: false, error: errMsg(e) }; }
+  if (res && res.ok) {
+    el.value = '';
+    state.dsAddOpen = false;
+    state.dsMsg = { ok: true, text: 'DeepSeek key verified and saved' };
+    try { state.ds = await req('deepseek.get'); } catch (e) { /* the next refresh brings it */ }
+    render();
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Verify & save';
+    say(false, (res && res.error) || 'Could not verify the key.');
+  }
+}
+
+async function removeDeepSeek() {
+  state.dsConfirm = false;
+  try { await req('deepseek.clear'); state.ds = null; state.dsMsg = { ok: true, text: 'DeepSeek key removed' }; } catch (e) { state.notice = 'Could not remove the DeepSeek key: ' + errMsg(e); }
+  render();
+}
+
 async function testConnection() {
   if (state.connBusy) return;
   state.connBusy = true;
@@ -1290,9 +1393,14 @@ async function disconnect() {
   await refreshStatus();
 }
 
+// Bumped by every local settings change, so a settings.get that started before it cannot undo it.
+let settingsEdits = 0;
 async function loadSettings() {
+  const at = settingsEdits;
   try {
-    state.settings = await req('settings.get');
+    const s = await req('settings.get');
+    if (at !== settingsEdits) return;
+    state.settings = s;
     state.settingsErr = null;
   } catch (e) {
     state.settingsErr = errMsg(e);
@@ -1323,6 +1431,7 @@ async function exportCsv(kind) {
 }
 
 function saveSetting(field, value) {
+  settingsEdits++;
   req('settings.set', { [field]: value }).then((s) => {
     state.settings = s;
     state.settingsErr = null;
@@ -1350,6 +1459,9 @@ function selectTab(id) {
     state.connRes = null;
     state.confirmDisc = false;
     state.replaceOpen = false;
+    state.dsAddOpen = false;
+    state.dsMsg = null;
+    state.dsConfirm = false;
   }
   savePrefs();
   render();
@@ -1387,6 +1499,13 @@ app.addEventListener('click', (e) => {
     case 'model': state.model = state.model === v ? null : v; render(); break;
     case 'unpin': state.pin = null; state.hover = null; render(); break;
     case 'toggle': state.open = { ...state.open, [v]: !state.open[v] }; savePrefs(); render(); break;
+    case 'ds-add': state.dsAddOpen = !state.dsAddOpen; state.dsMsg = null; render(); if (state.dsAddOpen) focusFk('ds-key'); break;
+    case 'ds-save': saveDeepSeek(); break;
+    case 'ds-open-keys': openUrl(DS_KEYS_URL); break;
+    case 'ds-topup': openUrl(DS_TOPUP_URL); break;
+    case 'ds-remove': state.dsConfirm = true; render(); focusFk('ds-remove-yes'); break;
+    case 'ds-remove-no': state.dsConfirm = false; render(); break;
+    case 'ds-remove-yes': removeDeepSeek(); break;
     case 'small-keys': state.smallKeys = !state.smallKeys; render(); break;
     case 'key': state.keyOpen = state.keyOpen === v ? null : v; render(); break;
     case 'menu': state.menu = !state.menu; render(); if (state.menu) focusFk('export:daily'); break;
@@ -1448,6 +1567,7 @@ app.addEventListener('pointerout', (e) => {
 app.addEventListener('keydown', (e) => {
   const t = e.target;
   if (e.key === 'Enter' && t.tagName === 'INPUT') {
+    if (t.id === 'ds-key') { e.preventDefault(); saveDeepSeek(); return; }
     if (t.closest('.keyform')) { e.preventDefault(); saveKeys(); return; }
     if (t.dataset.set && t.type === 'number') { e.preventDefault(); t.blur(); return; }
   }
@@ -1684,7 +1804,21 @@ function makeMock() {
     };
   }
 
+  // #deepseek: a saved DeepSeek key with a balance; #deepseek-low: nearly used up.
+  let dsMock = has('deepseek') || has('deepseek-low') ? { label: 'sk-…9f2a', total: has('deepseek-low') ? 2.1 : 12.5 } : null;
+  const dsView = () => dsMock && {
+    label: dsMock.label, available: dsMock.total > 0,
+    balances: [{ currency: 'USD', total: dsMock.total, granted: Math.min(2, dsMock.total), toppedUp: Math.max(0, dsMock.total - 2), burnPerDay: 1.2, daysLeft: dsMock.total / 1.2 }],
+    updatedAt: Date.now() - 120e3, error: null, authFailed: false
+  };
   const handlers = {
+    'deepseek.get': async () => dsView(),
+    'deepseek.save': async (inp) => {
+      if (!inp || !inp.apiKey || inp.apiKey === 'bad') return { ok: false, error: 'DeepSeek rejected this key. It may be mistyped or revoked.' };
+      dsMock = { label: 'sk-…' + String(inp.apiKey).slice(-4), total: 12.5 };
+      return { ok: true, label: dsMock.label };
+    },
+    'deepseek.clear': async () => { dsMock = null; return { ok: true }; },
     'status.get': async () => ({
       configured, keyLabel: configured ? LABEL : null, refreshing: false,
       lastRefreshAt: Date.now() - 120e3,

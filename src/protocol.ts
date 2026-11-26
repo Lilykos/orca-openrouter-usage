@@ -140,6 +140,29 @@ export interface Report {
   stale: { since: number; error: string } | null
 }
 
+/** The optional DeepSeek account, or null in requests when no DeepSeek key is saved. */
+export interface DeepSeekView {
+  /** The saved key, masked (e.g. sk-…cdef). */
+  label: string
+  /** DeepSeek's own flag: whether the balance is enough for API calls. Null before the first reading. */
+  available: boolean | null
+  balances: {
+    currency: string
+    total: number
+    granted: number
+    toppedUp: number
+    /** Mean daily spend from balance snapshots over the last 7 days; null with under 12 hours of history. */
+    burnPerDay: number | null
+    daysLeft: number | null
+  }[]
+  /** When the balance was last read, ms epoch. */
+  updatedAt: number | null
+  /** The last failure reading the balance, in plain English; null when the last read worked. */
+  error: string | null
+  /** True when DeepSeek rejected the saved key. */
+  authFailed: boolean
+}
+
 export interface Status {
   configured: boolean
   /** OpenRouter's masked label for the stored management key (e.g. sk-or-v1-abc...xyz), or null. */
@@ -193,6 +216,12 @@ declare module 'orca' {
     'report.get': { input: { range: Range; measure: Measure }; output: Report | null }
     'export.csv': { input: { range: Range; kind: ExportKind }; output: CsvExport }
     'refresh': { output: { ok: true } | { ok: false; error: string } }
+    /** The DeepSeek account, or null when no DeepSeek key is saved. */
+    'deepseek.get': { output: DeepSeekView | null }
+    /** Verifies a DeepSeek API key by reading its balance, then stores it. */
+    'deepseek.save': { input: { apiKey: string }; output: { ok: true; label: string } | { ok: false; error: string } }
+    /** Forgets the DeepSeek key and everything read with it. */
+    'deepseek.clear': { output: { ok: true } }
   }
   interface PluginPanelEvents {
     /** The worker finished a refresh; the panel should call report.get again. */

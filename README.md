@@ -14,6 +14,7 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
   - **Usage**: today and this month (with an optional monthly budget), a daily chart for 7 days, 30 days or all time in Cost or Tokens, your models, the token mix and a 26-week activity heatmap. Hover a bar to read its day; click a day, in the chart or the heatmap, to see its models and token mix. Click a model for its details.
   - **Keys**: spend per API key with its own 7D, 30D and All switch, limit meters, and badges only for keys that need attention.
   - **Settings**: verify, replace or disconnect your key, refresh interval, alerts, budgets, the status bar item, BYOK counting, and the banner's colour and vivid switch, with a live preview.
+- An optional **DeepSeek** balance: add a DeepSeek API key in Settings and a card shows its balance and how long it lasts. Hidden when no key is saved.
 - **CSV exports** of daily totals, models or API keys from the ⋯ menu.
 - A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a budget is passed.
 
@@ -25,7 +26,7 @@ orca plugin install Lilykos/orca-openrouter-usage
 
 Orca shows what the plugin is allowed to do and asks you to approve it.
 
-Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.3.0 adds no capabilities, but Orca may ask you to review the new banner settings. Your key and settings stay with the existing install.
+Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Versions 1.3.0 and 1.4.0 add no capabilities, but Orca may ask you to review the new banner settings. Your key and settings stay with the existing install.
 
 ## Setup
 
@@ -41,6 +42,12 @@ All numbers come from OpenRouter's `/credits`, `/activity` and `/keys` endpoints
 - BYOK follows the setting for spend and budgets. Credit runway always uses OpenRouter credit spend, excluding external BYOK inference costs.
 - CSVs use the selected range and BYOK setting and always export USD spend, even in Tokens mode. Daily exports include approximate today; model exports cover completed days; All-time key exports include lifetime usage. UTC bounds and export time are included. Key hashes and the management key are omitted; formula-like names are prefixed with an apostrophe for spreadsheet safety.
 - Monthly figures and today's totals are approximate: deleted keys or other workspaces may not be included in key totals. Budgets use UTC months and alert once while over budget, re-arming after recovery or a budget change.
+
+### DeepSeek (optional)
+
+- The DeepSeek key is verified once, stored in Orca's encrypted secrets, and only used for `GET https://api.deepseek.com/user/balance`.
+- DeepSeek's API reports a balance, not usage history, so there is no per-model or daily breakdown. Days left come from balance readings over the last 7 days, ignoring top-ups, and need about 12 hours of readings.
+- Removing the key in Settings forgets it and every reading.
 
 ## If something looks wrong
 

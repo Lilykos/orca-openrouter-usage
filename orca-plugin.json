@@ -2,8 +2,8 @@
   "manifestVersion": 2,
   "id": "openrouter-usage",
   "name": "OpenRouter Usage",
-  "version": "1.3.0",
-  "description": "Track OpenRouter credits and runway from Orca: daily spend by model, token mix, an activity heatmap, per-key spend and limits, budgets, CSV exports and a status bar balance. Read-only; your management key stays in Orca's encrypted secret store.",
+  "version": "1.4.0",
+  "description": "Track OpenRouter credits and runway from Orca: daily spend by model, token mix, an activity heatmap, per-key spend and limits, budgets, CSV exports and a status bar balance, plus an optional DeepSeek balance. Read-only; your keys stay in Orca's encrypted secret store.",
   "author": {
     "name": "Lilykos",
     "url": "https://github.com/Lilykos"

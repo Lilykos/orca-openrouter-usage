@@ -212,6 +212,7 @@ export function buildReport(input: ReportInput): Report {
       date: d,
       total: 0,
       byModel: Object.fromEntries(keyNames.map((k) => [k, 0])),
+      otherModels: {},
       partial: false,
     })
   }
@@ -222,10 +223,11 @@ export function buildReport(input: ReportInput): Report {
     const key = topSet.has(r.model) ? r.model : 'other'
     bar.total += v
     bar.byModel[key] = (bar.byModel[key] ?? 0) + v
+    if (key === 'other') bar.otherModels[r.model] = (bar.otherModels[r.model] ?? 0) + v
   }
   const daily: DailyBar[] = days.map((d) => bars.get(d)!)
   if (measure === 'cost') {
-    daily.push({ date: today, total: tiles.today, byModel: { other: tiles.today }, partial: true })
+    daily.push({ date: today, total: tiles.today, byModel: { other: tiles.today }, otherModels: {}, partial: true })
   }
 
   // Token mix for the range.

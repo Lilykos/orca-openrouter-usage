@@ -219,6 +219,27 @@ try {
     if (toggle && sel) { toggle.click(); await wait(400); check('the status bar picker is disabled while the status bar is off', !!document.querySelector('select[disabled]')); }
     else check('status bar picker and toggle exist', false);
   `))
+  report(drive('dark', `
+    const tip = () => $('#tip');
+    const hover = (el) => { el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })); };
+    await click('[data-act="measure"][data-val="cost"]'); await click('[data-act="range"][data-val="30d"]'); await wait(400);
+    const bars = [...document.querySelectorAll('.chart .col[data-tip]')];
+    check('the daily chart has bars to hover (' + bars.length + ')', bars.length > 2);
+    const done = bars[bars.length - 2];
+    if (done) { hover(done); await wait(150); }
+    check('a chart bar tooltip lists every model that day, with no Other row', !!done && !tip().hidden && !/\\bOther\\b/.test(tip().innerText) && /llama-3.3-70b-instruct/.test(tip().innerText));
+    const today = bars[bars.length - 1];
+    if (today) { hover(today); await wait(150); }
+    check('the partial today bar is not labelled as Other', !!today && /not split yet/.test(tip().innerText) && !/\\bOther\\b/.test(tip().innerText));
+    await click('[data-act="tab"][data-val="ledger"]');
+    const rows = [...document.querySelectorAll('.lg-row')];
+    check('every ledger row carries a split tooltip and is focusable', rows.length > 0 && rows.every((r) => r.dataset.tip && r.tabIndex === 0));
+    const past = rows.find((r) => !r.classList.contains('partial'));
+    if (past) { hover(past); await wait(150); }
+    check('hovering a ledger day shows its split per model', !!past && !tip().hidden && /Total/.test(tip().innerText) && tip().querySelectorAll('.row').length >= 3 && !/\\bOther\\b/.test(tip().innerText) && /llama-3.3-70b-instruct/.test(tip().innerText));
+    if (past) { past.dispatchEvent(new MouseEvent('mouseout', { bubbles: true, relatedTarget: document.body })); await wait(100); }
+    check('leaving a ledger row hides the tooltip', tip().hidden);
+  `))
   report(drive('dark,tab=models,many', `
     const rows = () => document.querySelectorAll('[data-act="model-open"]').length;
     check('only the top 8 models show at first', rows() === 8);

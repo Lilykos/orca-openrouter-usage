@@ -121,12 +121,15 @@ main > * { min-width: 0; }
 .kr-meta { color: var(--muted-fg); font-size: 12px; line-height: 1.5; }
 .lg-sum { margin: 0 0 8px; }
 .ledger { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
-.lg-row { display: grid; grid-template-columns: 96px 1fr auto; gap: 10px; align-items: center; padding: 4px 0; }
+.lg-row { display: grid; grid-template-columns: 96px 1fr auto; gap: 10px; align-items: center; padding: 4px 6px; margin: 0 -6px; }
 .lg-date { white-space: nowrap; color: var(--muted-fg); font-variant-numeric: tabular-nums; }
 .lg-date em { font-style: normal; font-size: 11px; opacity: .8; }
 .lg-bar { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 55%, transparent); overflow: hidden; }
 .lg-bar i { display: block; height: 100%; border-radius: 4px; background: var(--s1, #3b82f6); }
 .lg-row.partial .lg-bar i { opacity: .55; }
+.lg-row { border-radius: 6px; cursor: default; }
+.lg-row:hover, .lg-row:focus-visible { background: var(--accent); }
+.lg-row:focus-visible { outline: 2px solid var(--s1); outline-offset: -2px; }
 .lg-val { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; padding: 2px; background: var(--card); gap: 2px; }
 .seg button { border: 0; background: transparent; color: var(--muted-fg); min-height: 26px; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
@@ -336,6 +339,8 @@ svg.chart.donut { width: 96px; height: 96px; flex: none; }
 .tip .row span:last-child { font-variant-numeric: tabular-nums; }
 .tip .sw { margin-right: 4px; vertical-align: -1px; }
 .tip .note { margin-top: 6px; color: var(--muted-fg); font-size: 11px; }
+.tip .row span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.tip .row.more { color: var(--muted-fg); font-size: 11px; }
 .tip hr { border: 0; border-top: 1px solid var(--border); margin: 6px 0; }
 
 @media (max-width: 480px) {
@@ -677,10 +682,25 @@ function tilesHtml(rep) {
   ].join('')}</div>`;
 }
 
+const TIP_MODELS = 10;
+
+/* Day tooltip: every model that day, largest first. Models outside the chart's top 5 keep the grey "other" swatch so they
+   still match the bar. Today has no per-model data yet, so it stays one unsplit row. */
 function dayTip(d, meas) {
-  const entries = Object.entries(d.byModel).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-  const rows = entries.map(([k, v]) => `<div class="row"><span><i class="sw" style="background:${colorOf(k)}"></i>${esc(k)}</span><span>${esc(fmt(v, meas))}</span></div>`).join('')
-    || '<div class="row"><span>No activity</span><span>—</span></div>';
+  const row = (swatch, label, v, title) => `<div class="row"><span${title ? ` title="${esc(title)}"` : ''}><i class="sw" style="background:${colorOf(swatch)}"></i>${esc(label)}</span><span>${esc(fmt(v, meas))}</span></div>`;
+  let rows;
+  if (d.partial) {
+    rows = d.total > 0 ? row('other', 'All models (not split yet)', d.total) : '';
+  } else {
+    const all = [
+      ...Object.entries(d.byModel).filter(([k]) => k !== 'other').map(([k, v]) => [k, v, k]),
+      ...Object.entries(d.otherModels || {}).map(([k, v]) => [k, v, 'other']),
+    ].filter((e) => e[1] > 0).sort((a, b) => b[1] - a[1]);
+    rows = all.slice(0, TIP_MODELS).map(([m, v, sw]) => row(sw, shortModel(m), v, m)).join('');
+    const rest = all.slice(TIP_MODELS);
+    if (rest.length) rows += `<div class="row more"><span>${rest.length} more model${rest.length === 1 ? '' : 's'}</span><span>${esc(fmt(rest.reduce((a, e) => a + e[1], 0), meas))}</span></div>`;
+  }
+  rows = rows || '<div class="row"><span>No activity</span><span>—</span></div>';
   return `<b>${esc(dayLong(d.date))}${d.partial ? ' · so far' : ''}</b>${rows}<hr><div class="row"><span>Total</span><span>${esc(fmt(d.total, meas))}</span></div>${d.partial ? '<div class="note">Partial: today so far, built from key totals rather than per-request activity. Updates on refresh.</div>' : ''}`;
 }
 
@@ -834,7 +854,7 @@ function ledgerCard(rep) {
   const avg = done.length ? sum / done.length : 0;
   const peak = done.reduce((a, d) => (a == null || d.total > a.total ? d : a), null);
   const summary = `<p class="muted small lg-sum">${done.length} active day${done.length === 1 ? '' : 's'} · avg ${esc(fmtMeas(avg, meas))}/day${peak ? ` · peak ${esc(dayLabel(peak.date))} (${esc(fmtMeas(peak.total, meas))})` : ''}</p>`;
-  const rows = days.map((d) => `<li class="lg-row${d.partial ? ' partial' : ''}"><span class="lg-date">${esc(dayLabel(d.date))}${d.partial ? ' <em>so far</em>' : ''}</span><span class="lg-bar" aria-hidden="true"><i style="width:${Math.max(2, (d.total / max) * 100).toFixed(1)}%"></i></span><span class="lg-val">${esc(fmtMeas(d.total, meas))}</span></li>`).join('');
+  const rows = days.map((d) => `<li class="lg-row${d.partial ? ' partial' : ''}" tabindex="0" aria-label="${esc(dayLabel(d.date) + ': ' + fmtMeas(d.total, meas) + (d.partial ? ' (so far)' : ''))}" data-tip="${addTip(dayTip(d, meas))}"><span class="lg-date">${esc(dayLabel(d.date))}${d.partial ? ' <em>so far</em>' : ''}</span><span class="lg-bar" aria-hidden="true"><i style="width:${Math.max(2, (d.total / max) * 100).toFixed(1)}%"></i></span><span class="lg-val">${esc(fmtMeas(d.total, meas))}</span></li>`).join('');
   return `<section class="card" aria-labelledby="h-ledger">
     <div class="card-h"><h2 id="h-ledger">Daily ledger</h2><span class="muted small">Newest first</span></div>
     ${summary}<ul class="ledger">${rows}</ul>
@@ -1770,16 +1790,18 @@ function makeMock() {
     const top = Object.keys(modelTot).sort((a, b) => modelTot[b] - modelTot[a]).slice(0, 5);
     const daily = dates.map((date) => {
       const byModel = {};
+      const otherModels = {};
       let total = 0;
       rowsR.filter((r) => r.date === date).forEach((r) => {
         const k = top.includes(r.model) ? r.model : 'other';
         byModel[k] = (byModel[k] || 0) + val(r);
+        if (k === 'other') otherModels[r.model] = (otherModels[r.model] || 0) + val(r);
         total += val(r);
       });
-      return { date, total: round4(total), byModel, partial: date === today };
+      return { date, total: round4(total), byModel, otherModels, partial: date === today };
     });
 
-    if (measure === 'cost') daily.push({ date: today, total: todayCost, byModel: { other: todayCost }, partial: true });
+    if (measure === 'cost') daily.push({ date: today, total: todayCost, byModel: { other: todayCost }, otherModels: {}, partial: true });
     const nonPartial = dates;
     const seriesFor = (name) => nonPartial.map((date) =>
       round4(rowsR.filter((r) => r.date === date && r.model === name).reduce((a, r) => a + val(r), 0)));

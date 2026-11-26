@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- The daily chart's tooltip now lists every model used that day, largest first, instead of lumping the smaller ones into **Other**. The bars still colour the range's top 5 models; the rest stay grey and keep a grey swatch in the tooltip. A model outside the range's top 5 used to be hidden in Other, even on days it ranked high.
+- Hover or focus a day in the **Ledger** to see every model's share of that day, like the chart.
+- Today's bar no longer calls its spend "Other": it says "All models (not split yet)", because today's total comes from key totals that are not broken down by model.
+- No new permissions or settings.
+
 ## 1.1.0
 
 - Compare spend over 7 or 30 completed UTC days with the preceding equal period, including per-model changes. Comparisons wait for sufficient history and handle new spend without infinite percentages.

@@ -14,7 +14,8 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
 - An optional **monthly budget**, with progress and a warning when actual or projected spend exceeds it. Set it in Settings; 0 turns it off. Alerts never block usage.
 - **Key health** badges for expiring/expired keys and near/exhausted limits, with daily, weekly or monthly reset labels. Meters use the remaining API allowance.
 - **CSV exports** of daily totals, models or API keys. Pick the data next to Export CSV at the bottom of a report and choose where to save it.
-- Five tabs: **Overview** (tiles, daily spend or tokens by model, today's burn), **Models** (ranked, with a details drawer per model plus the token mix), **Keys** (spend per key for 7d, 30d or all time, with limits and last use) **Ledger** (newest-first daily list and an activity heatmap) and **Settings**.
+- Five tabs: **Overview** (tiles, daily spend or tokens by model, today's burn), **Models** (ranked, with a details drawer per model plus the token mix), **Keys** (spend per key for 7d, 30d or all time, with limits and last use) **Ledger** (newest-first daily list, hover a day for its split per model, and an activity heatmap) and **Settings**.
+- The daily chart names your top 5 models in the range; hover a bar to see every model used that day.
 - Range (7d, 30d, All) and Cost or Tokens switches, with refresh on the right.
 - A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a daily budget is passed.
 
@@ -26,7 +27,7 @@ orca plugin install Lilykos/orca-openrouter-usage
 
 Orca shows what the plugin is allowed to do and asks you to approve it.
 
-Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.1.0 adds no capabilities, but Orca may ask you to review the new monthly-budget setting. Your key and settings stay with the existing install.
+Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.2.0 adds no capabilities or settings. Your key and settings stay with the existing install.
 
 ## Setup
 

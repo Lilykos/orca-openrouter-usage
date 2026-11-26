@@ -147,6 +147,29 @@ test('byModel keeps top 5 models plus other, summing to total', () => {
   }
 })
 
+test('otherModels lists the models folded into other, summing to its value', () => {
+  const report = buildReport(baseInput())
+  const top = new Set(Object.keys(report.daily[0].byModel).filter((k) => k !== 'other'))
+  let seen = 0
+  for (const b of report.daily.filter((x) => !x.partial)) {
+    const sum = Object.values(b.otherModels).reduce((s, v) => s + v, 0)
+    assert.ok(Math.abs(sum - b.byModel.other) < 1e-9, b.date)
+    assert.ok(Object.keys(b.otherModels).every((m) => !top.has(m)), b.date)
+    seen += Object.keys(b.otherModels).length
+  }
+  assert.ok(seen > 0, 'fixture folds at least one model into other')
+  assert.deepEqual(report.daily[report.daily.length - 1].otherModels, {})
+})
+
+test('a model outside the range top 5 stays named inside other on its day', () => {
+  const big = ['m/a', 'm/b', 'm/c', 'm/d', 'm/e'].map((model) => row({ date: '2026-11-03', model, usage: 10 }))
+  const small = row({ date: '2026-11-08', model: 'deepseek/deepseek-v4.1-flash-1017', usage: 0.18 })
+  const report = buildReport(baseInput({ rows: [...big, small], range: '7d' }))
+  const day = report.daily.find((b) => b.date === '2026-11-08')!
+  assert.equal(day.byModel.other, 0.18)
+  assert.deepEqual(day.otherModels, { 'deepseek/deepseek-v4.1-flash-1017': 0.18 })
+})
+
 test('partial today bar only for cost measure', () => {
   const cost = buildReport(baseInput({ measure: 'cost' }))
   const last = cost.daily[cost.daily.length - 1]

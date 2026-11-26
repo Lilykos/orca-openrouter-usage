@@ -2,7 +2,7 @@
   "manifestVersion": 2,
   "id": "openrouter-usage",
   "name": "OpenRouter Usage",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Track OpenRouter credits, runway and spend from Orca: model comparisons, daily and monthly budgets, API key health, CSV exports and a status bar balance. Read-only; your management key stays in Orca's encrypted secret store.",
   "author": {
     "name": "Lilykos",
@@ -37,7 +37,7 @@
     },
     {
       "path": "images/screenshot-ledger.png",
-      "alt": "The Ledger tab: a newest-first list of days with a bar and amount, and an activity calendar",
+      "alt": "The Ledger tab: a newest-first list of days with a bar and amount, and an activity calendar; hovering a day shows its spend per model",
       "caption": "A daily ledger and activity calendar",
       "theme": "dark"
     },

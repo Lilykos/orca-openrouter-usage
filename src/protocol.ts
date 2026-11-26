@@ -85,6 +85,8 @@ export interface DailyBar {
   total: number
   /** Top 5 models by value in the range, plus "other"; value in the active measure. */
   byModel: Record<string, number>
+  /** The models folded into "other" that day, by value in the active measure. Empty for today (no per-model data yet). */
+  otherModels: Record<string, number>
   /** True for today: built from key totals, not /activity. */
   partial: boolean
 }

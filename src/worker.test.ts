@@ -237,6 +237,14 @@ test('a rejected key turns the status bar red, and recovers on the next good ref
   assert.ok(lastBar(host).text?.includes('left'))
 })
 
+test('banner style defaults to quiet, saves valid choices and ignores others', async () => {
+  const { worker } = await connected({})
+  assert.equal(((await worker.request('settings.get')) as Settings).bannerStyle, 'quiet')
+  assert.equal(((await worker.request('settings.set', { bannerStyle: 'vivid' })) as Settings).bannerStyle, 'vivid')
+  assert.equal(((await worker.request('settings.set', { bannerStyle: 'neon' as never })) as Settings).bannerStyle, 'vivid')
+  assert.equal(((await worker.request('settings.get')) as Settings).bannerStyle, 'vivid')
+})
+
 test('status bar content follows the setting', async () => {
   const credits = await connected({ statusBarContent: 'credits' })
   assert.ok(/^\$[\d.]+ left$/.test(lastBar(credits.host).text ?? ''), lastBar(credits.host).text)

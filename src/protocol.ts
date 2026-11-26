@@ -151,6 +151,7 @@ export interface Status {
 }
 
 export type StatusBarContent = 'credits' | 'credits-today' | 'credits-days'
+export type BannerStyle = 'quiet' | 'vivid' | 'plain'
 
 /** Options the person can change in the panel's settings view. Mirrors the manifest's `contributes.settings`. */
 export interface Settings {
@@ -169,6 +170,8 @@ export interface Settings {
   statusBarContent: StatusBarContent
   /** Count BYOK (bring your own key) usage in spend figures. */
   includeByok: boolean
+  /** How the credits banner looks: the quiet gradient, the original vivid purple, or plain. */
+  bannerStyle: BannerStyle
 }
 
 declare module 'orca' {

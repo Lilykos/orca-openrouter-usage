@@ -1,7 +1,7 @@
 // The plugin's worker: owns the API keys, the network, the cache and the alerts. The panel only
 // asks it for finished reports (src/protocol.ts) and never sees a key.
 import type { OrcaWorkerApi } from 'orca/worker'
-import type { DayRow, KeyInfo, Measure, Range, Report, Settings, Status, StatusBarContent } from './protocol'
+import type { BannerStyle, DayRow, KeyInfo, Measure, Range, Report, Settings, Status, StatusBarContent } from './protocol'
 import { OpenRouterError, createClient, getActivity, getCredits, getKeyActivity, getKeyMeta, listKeys } from './core/openrouter'
 import { buildReport, keyMayHaveRecentActivity, normalizeActivity, normalizeKeys, todaySpend } from './core/report'
 import { addSnapshot, mergeDays, pruneRows, type Snapshot } from './core/history'
@@ -42,9 +42,11 @@ const DEFAULT_SETTINGS: Settings = {
   statusBar: true,
   statusBarContent: 'credits-today',
   includeByok: true,
+  bannerStyle: 'quiet',
 }
 
 const CONTENT_CHOICES: readonly StatusBarContent[] = ['credits', 'credits-today', 'credits-days']
+const BANNER_CHOICES: readonly BannerStyle[] = ['quiet', 'vivid', 'plain']
 
 // Plain-English reasons for the failures a person can actually act on.
 function describeError(e: unknown): string {
@@ -115,6 +117,7 @@ export default function activate(orca: OrcaWorkerApi): void {
         ? (raw.statusBarContent as StatusBarContent)
         : DEFAULT_SETTINGS.statusBarContent,
       includeByok: bool('includeByok'),
+      bannerStyle: BANNER_CHOICES.includes(raw.bannerStyle as BannerStyle) ? (raw.bannerStyle as BannerStyle) : DEFAULT_SETTINGS.bannerStyle,
     }
   }
 
@@ -457,6 +460,7 @@ export default function activate(orca: OrcaWorkerApi): void {
     if (typeof patch.statusBar === 'boolean') next.statusBar = patch.statusBar
     if (patch.statusBarContent !== undefined && CONTENT_CHOICES.includes(patch.statusBarContent)) next.statusBarContent = patch.statusBarContent
     if (typeof patch.includeByok === 'boolean') next.includeByok = patch.includeByok
+    if (patch.bannerStyle !== undefined && BANNER_CHOICES.includes(patch.bannerStyle)) next.bannerStyle = patch.bannerStyle
     const changed = (Object.keys(next) as (keyof Settings)[]).filter((k) => next[k] !== current[k])
     for (const k of changed) await orca.settings.set(k, next[k])
     // Alerts re-arm only when a threshold they depend on changed.

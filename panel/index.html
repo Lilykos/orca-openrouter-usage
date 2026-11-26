@@ -113,6 +113,27 @@ main > * { min-width: 0; }
 .banner.warn .btn { border-color: var(--bn-warn-line); }
 .bn-skel { display: block; width: 150px; height: 38px; margin: 4px 0; border-radius: 8px; background: color-mix(in srgb, var(--bn-fg) 10%, transparent); animation: pulse 1.4s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .5; } }
+/* Banner styles. Vivid is the original purple banner; plain drops the gradient and the motif. */
+.banner.vivid { --bn-fg: #ffffff; --bn-fg-2: rgba(255,255,255,.78); --bn-motif: #ffffff; --bn-btn: rgba(255,255,255,.14); --bn-line: rgba(255,255,255,.22);
+  background: radial-gradient(120% 140% at 85% 20%, rgba(167,139,250,.55) 0%, rgba(167,139,250,0) 55%), linear-gradient(120deg, #0b1020 0%, #1e1b4b 45%, #4338ca 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.10); }
+.banner.vivid .bn-motif { width: min(62%, 300px); -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 30%); mask-image: linear-gradient(90deg, transparent 0%, #000 30%); }
+.banner.vivid.warn { --bn-motif: #fde68a; --bn-line: rgba(253,230,138,.35);
+  background: radial-gradient(120% 140% at 85% 20%, rgba(251,191,36,.45) 0%, rgba(251,191,36,0) 55%), linear-gradient(120deg, #140d02 0%, #3b2606 45%, #b45309 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.10); }
+.banner.plain { --bn-fg: var(--fg); --bn-fg-2: var(--muted); --bn-btn: var(--bg); --bn-line: var(--border); background: var(--neutral-bg); box-shadow: inset 0 0 0 1px var(--border); }
+.banner.plain .bn-motif { display: none; }
+.banner.plain.warn { background: var(--warn-bg); box-shadow: inset 0 0 0 1px var(--warn-line); }
+.banner.plain.warn .hero-sub { color: var(--warn); }
+/* the picker in Settings: three small banners */
+.bn-pick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 4px 0 6px; }
+.bn-opt { border: 0; padding: 0; background: none; cursor: pointer; text-align: left; font-size: 12px; color: var(--fg-2); display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.bn-opt .banner { height: 46px; padding: 7px 9px; border-radius: 7px; pointer-events: none; }
+.bn-opt .banner .bn-motif { width: 70%; }
+.bn-opt .mini { font-size: 15px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
+.bn-opt .mini-l { font-size: 9.5px; color: var(--bn-fg-2); margin-bottom: 3px; }
+.bn-opt[aria-checked="true"] .banner { outline: 2px solid var(--focus); outline-offset: 2px; }
+.bn-opt[aria-checked="true"] { color: var(--fg); font-weight: 600; }
 
 /* ---------- warnings ---------- */
 .warns { display: flex; flex-direction: column; gap: 6px; margin-top: -8px; }
@@ -457,6 +478,8 @@ const openUrl = (url) => Promise.resolve(host().shell && host().shell.openExtern
 /* ---------- derived data ---------- */
 
 const lowOf = () => (state.settings && state.settings.lowBalanceUsd) || 0;
+const BANNER_STYLES = [['quiet', 'Quiet'], ['vivid', 'Vivid'], ['plain', 'Plain']];
+const bannerStyle = () => { const v = state.settings && state.settings.bannerStyle; return BANNER_STYLES.some(([k]) => k === v) ? v : 'quiet'; };
 // Runway is short: 3 days or less at the recent rate, or credits under the low-balance alert.
 function runwayShort(rep) {
   const b = rep.balance;
@@ -544,7 +567,7 @@ const modelVal = (m) => (TOK() ? m.prompt + m.completion : m.cost);
 function bannerHtml() {
   const rep = state.report;
   if (!rep) {
-    return `<section class="banner" aria-label="Credits">${MOTIF}<div class="bn-top"><span class="bn-label">Credits left</span></div><span class="bn-skel" aria-hidden="true"></span><span class="sr-only">Loading credits</span><div class="hero-sub">&nbsp;</div></section>`;
+    return `<section class="banner ${bannerStyle()}" aria-label="Credits">${MOTIF}<div class="bn-top"><span class="bn-label">Credits left</span></div><span class="bn-skel" aria-hidden="true"></span><span class="sr-only">Loading credits</span><div class="hero-sub">&nbsp;</div></section>`;
   }
   const b = rep.balance;
   const warn = runwayShort(rep);
@@ -556,7 +579,7 @@ function bannerHtml() {
       ? `At ${money(b.burnPerDay)} a day, the average of the last 7 days`
       : `About ${n} day${n === 1 ? '' : 's'} left at ${money(b.burnPerDay)} a day`;
   }
-  return `<section class="banner${warn ? ' warn' : ''}" aria-label="Credits">${MOTIF}
+  return `<section class="banner ${bannerStyle()}${warn ? ' warn' : ''}" aria-label="Credits">${MOTIF}
     <div class="bn-top"><span class="bn-label">Credits left</span><button type="button" class="btn" data-act="add-credits" data-fk="add-credits">Add credits ${ICON.ext}</button></div>
     <div class="hero-num">${esc(whole)}${cents ? `<span class="c">.${esc(cents)}</span>` : ''}</div>
     <div class="hero-sub">${esc(sub)}</div>
@@ -955,6 +978,10 @@ function settingsHtml() {
       ${row('Show credits in the status bar', '', sw('statusBar', 'Show credits in the status bar'))}
       ${row('Next to credits', '', `<select class="select" aria-label="Status bar shows" data-set="statusBarContent" data-fk="set:statusBarContent"${s.statusBar ? '' : ' disabled'}>${SBC.map(([v, l]) => `<option value="${v}"${s.statusBarContent === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`, !s.statusBar)}
     </section>
+    <section aria-labelledby="h-look">
+      <h2 id="h-look">Banner style</h2>
+      <div class="bn-pick" role="radiogroup" aria-labelledby="h-look">${BANNER_STYLES.map(([v, l]) => `<button type="button" class="bn-opt" role="radio" aria-checked="${bannerStyle() === v}" tabindex="${bannerStyle() === v ? 0 : -1}" data-act="banner-style" data-val="${v}" data-fk="banner-style:${v}"><span class="banner ${v}" aria-hidden="true">${MOTIF}<div class="mini-l">Credits left</div><div class="mini">$9.15</div></span><span>${l}</span></button>`).join('')}</div>
+    </section>
     <section aria-labelledby="h-spendset">
       <h2 id="h-spendset">Spend</h2>
       ${row('Count BYOK usage', 'Include requests made with your own provider keys', sw('includeByok', 'Count BYOK usage in spend'))}
@@ -1277,6 +1304,9 @@ app.addEventListener('click', (e) => {
     case 'refresh': doRefresh(); break;
     case 'dismiss-warn': dismissed.add(v); saveDismissed(); render(); break;
     case 'add-credits': openUrl(CREDITS_URL); break;
+    case 'banner-style':
+      if (state.settings && state.settings.bannerStyle !== v) { state.settings = { ...state.settings, bannerStyle: v }; render(); saveSetting('bannerStyle', v); }
+      break;
     case 'conn-test': testConnection(); break;
     case 'replace': state.replaceOpen = !state.replaceOpen; state.keyMsg = null; render(); if (state.replaceOpen) focusFk('mgmt'); break;
     case 'retry': if (!state.status) refreshStatus(); else loadReport(); break;
@@ -1357,7 +1387,7 @@ app.addEventListener('keydown', (e) => {
     if (n != null) { e.preventDefault(); state.pin = { from: bs[n].from, to: bs[n].to }; state.hover = null; state.model = null; render(); focusFk('bar:' + n); }
     return;
   }
-  const seg = t.closest && t.closest('.seg');
+  const seg = t.closest && t.closest('.seg, .bn-pick');
   if (seg && /^Arrow/.test(e.key)) {
     e.preventDefault();
     const btns = [...seg.querySelectorAll('button')];
@@ -1467,7 +1497,7 @@ function makeMock() {
   const NEW = has('new');
   const DOWN = has('offline') ? "Can't reach OpenRouter. Check your internet connection." : has('revoked') ? 'OpenRouter rejected this key. It may be mistyped or revoked.' : null;
   let configured = !has('setup');
-  const settings = { refreshMinutes: 15, lowBalanceUsd: 10, dailyBudgetUsd: 0, monthlyBudgetUsd: has('budget') ? 25 : 0, notifications: true, statusBar: true, statusBarContent: 'credits-today', includeByok: true };
+  const settings = { refreshMinutes: 15, lowBalanceUsd: 10, dailyBudgetUsd: 0, monthlyBudgetUsd: has('budget') ? 25 : 0, notifications: true, statusBar: true, statusBarContent: 'credits-today', includeByok: true, bannerStyle: (location.hash.match(/(?:^#|,)banner=([a-z]+)/) || [])[1] || 'quiet' };
   const clampSettings = (p) => {
     const out = {};
     if ('refreshMinutes' in p) out.refreshMinutes = Math.min(120, Math.max(1, Math.round(+p.refreshMinutes) || 1));
@@ -1475,6 +1505,7 @@ function makeMock() {
     if ('dailyBudgetUsd' in p) out.dailyBudgetUsd = Math.max(0, +p.dailyBudgetUsd || 0);
     if ('monthlyBudgetUsd' in p) out.monthlyBudgetUsd = Math.max(0, +p.monthlyBudgetUsd || 0);
     if ('statusBarContent' in p && SBC.some(([v]) => v === p.statusBarContent)) out.statusBarContent = p.statusBarContent;
+    if ('bannerStyle' in p && BANNER_STYLES.some(([v]) => v === p.bannerStyle)) out.bannerStyle = p.bannerStyle;
     ['notifications', 'statusBar', 'includeByok'].forEach((k) => { if (k in p) out[k] = !!p[k]; });
     return out;
   };

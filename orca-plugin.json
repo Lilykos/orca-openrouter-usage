@@ -134,6 +134,23 @@
         "description": "Include requests made with your own provider keys in the spend figures.",
         "type": "boolean",
         "default": true
+      },
+      {
+        "key": "bannerStyle",
+        "title": "Banner style",
+        "description": "How the credits banner at the top of the panel looks.",
+        "type": "string",
+        "default": "quiet",
+        "enum": [
+          "quiet",
+          "vivid",
+          "plain"
+        ],
+        "enumLabels": [
+          "Quiet gradient",
+          "Vivid purple",
+          "Plain"
+        ]
       }
     ],
     "statusBarItems": [

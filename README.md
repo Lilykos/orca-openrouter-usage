@@ -13,7 +13,7 @@ Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter 
 - Three tabs:
   - **Usage**: today and this month (with an optional monthly budget), a daily chart for 7 days, 30 days or all time in Cost or Tokens, your models, the token mix and a 26-week activity heatmap. Hover or click a day, in the chart or the heatmap, to see that day's models and token mix. Click a model for its details.
   - **Keys**: spend per API key with its own 7D, 30D and All switch, limit meters, and badges only for keys that need attention.
-  - **Settings**: verify, replace or disconnect your key, refresh interval, alerts, budgets, the status bar item and BYOK counting.
+  - **Settings**: verify, replace or disconnect your key, refresh interval, alerts, budgets, the status bar item, BYOK counting and the banner style (quiet, vivid or plain).
 - **CSV exports** of daily totals, models or API keys from the ⋯ menu.
 - A status bar item (`$25.20 left · $0.10 today`) and notifications when credits run low or a budget is passed.
 
@@ -25,7 +25,7 @@ orca plugin install Lilykos/orca-openrouter-usage
 
 Orca shows what the plugin is allowed to do and asks you to approve it.
 
-Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.3.0 adds no capabilities or settings. Your key and settings stay with the existing install.
+Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Version 1.3.0 adds no capabilities, but Orca may ask you to review the new Banner style setting. Your key and settings stay with the existing install.
 
 ## Setup
 

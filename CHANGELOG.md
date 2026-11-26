@@ -13,8 +13,9 @@ A redesign: one answer first, detail on demand.
 - The **activity heatmap** covers 26 weeks, follows Cost or Tokens, and selects a day when you click it, widening the range when needed.
 - **Keys** has its own 7D, 30D and All switch, shows badges only when a key needs attention, and folds inactive keys away.
 - Settings keep the same options in a calmer layout. CSV export moved to the ⋯ menu.
+- New **Banner style** setting: the quiet gradient (default), the original vivid purple, or plain. Pick it from small previews in Settings or in Orca's plugin settings.
 - Follows Orca's light and dark themes for the charts and accents as well as the surfaces.
-- No new permissions or settings.
+- No new permissions. Orca may ask you to review the new Banner style setting when you update.
 
 ## 1.2.0
 

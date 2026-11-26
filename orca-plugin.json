@@ -3,7 +3,7 @@
   "id": "openrouter-usage",
   "name": "OpenRouter Usage",
   "version": "1.4.0",
-  "description": "Track OpenRouter credits and runway from Orca: daily spend by model, token mix, an activity heatmap, per-key spend and limits, budgets, CSV exports and a status bar balance, plus an optional DeepSeek balance. Read-only; your keys stay in Orca's encrypted secret store.",
+  "description": "Track OpenRouter credits and runway in your Orca sidebar: spend and tokens by day, model and token mix, a 26-week activity heatmap, spend and limits per API key, budgets with closable warnings, CSV exports and today's spend in the status bar. Add an optional DeepSeek key to see its balance, today's spend and days left; read-only, and your keys stay in Orca's encrypted secret store.",
   "author": {
     "name": "Lilykos",
     "url": "https://github.com/Lilykos"
@@ -14,37 +14,43 @@
   "icon": "images/icon.png",
   "cover": {
     "path": "images/cover.png",
-    "alt": "OpenRouter Usage: one input fanning out to several models, with the title and the features Credits and burn rate, Models, API keys, and Activity and token mix"
+    "alt": "OpenRouter Usage: one input fanning out to several models, with chips for Credits & runway, Models & tokens, API keys & limits and DeepSeek balance"
   },
   "screenshots": [
     {
       "path": "images/screenshot-overview.png",
-      "alt": "The Usage view: credits left in a violet banner, a closable runway warning, today and this month with budget progress, and a one-colour daily spend chart",
-      "caption": "Credits first, detail on demand",
+      "alt": "Usage with a vivid gold banner: $33.86 credits left and 42 days of runway, three closable warnings, today and November with a budget meter, and a 30-day chart",
+      "caption": "Credits, budget and warnings",
       "theme": "dark"
     },
     {
       "path": "images/screenshot-models.png",
-      "alt": "A selected day: the chart dims the other bars while Models and Token mix show that day only",
-      "caption": "Pick a day to see its models and tokens",
-      "theme": "dark"
-    },
-    {
-      "path": "images/screenshot-keys.png",
-      "alt": "The Keys tab with its own 7D, 30D and All switch, per-key spend, limit meters and only the badges that need attention",
-      "caption": "Per-key spend with its own range",
+      "alt": "A selected day, Mon, Nov 23: the chart dims the other bars while Models and Token mix show that day's $0.96, its six models and 2M tokens",
+      "caption": "A day, its models, its tokens",
       "theme": "dark"
     },
     {
       "path": "images/screenshot-ledger.png",
-      "alt": "Token mix as four numbers with cache hit and prompt-to-output ratio, above a 26-week activity heatmap",
+      "alt": "Token mix as four numbers (cached and uncached prompt, completion, reasoning) with 61% cache hit, above a 26-week activity heatmap totalling $52.94",
       "caption": "Token mix and 26 weeks of activity",
       "theme": "dark"
     },
     {
+      "path": "images/screenshot-keys.png",
+      "alt": "Keys in light mode with its own 7-day, 30-day and all-time switch, $41.61 across six active keys, limit meters, and Near limit and Expires badges",
+      "caption": "Every key, with its own range",
+      "theme": "light"
+    },
+    {
+      "path": "images/screenshot-deepseek.png",
+      "alt": "Usage in light mode with the DeepSeek card open: $12.50 balance, $0.90 spent today and 10 days left, above the spend chart",
+      "caption": "DeepSeek balance too",
+      "theme": "light"
+    },
+    {
       "path": "images/screenshot-settings.png",
-      "alt": "The Settings tab: connection with test, replace and disconnect, refresh and alert thresholds, budgets, status bar and BYOK switches",
-      "caption": "Verify your key and tune alerts",
+      "alt": "Settings in light mode with a vivid teal banner: OpenRouter connected, DeepSeek optional, colour and Vivid beside a live preview, and alerts and budgets",
+      "caption": "Your key, your rules",
       "theme": "light"
     }
   ],

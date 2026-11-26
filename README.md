@@ -2,22 +2,27 @@
 
 ![OpenRouter Usage](images/cover.png)
 
-A sidebar dashboard for [Orca](https://orca.dev) that shows what you spend on [OpenRouter](https://openrouter.ai): credits left, spend, tokens, models and API keys.
+A sidebar dashboard for [Orca](https://orca.dev) that shows what you spend on [OpenRouter](https://openrouter.ai): credits left, spend, tokens, models and API keys, plus an optional DeepSeek balance.
 
 Requires Orca 1.4.248 or later and an OpenRouter **management key** (OpenRouter Settings, Management Keys).
 
 ## What it shows
 
-- A banner with your **credits left**, how long they last at your recent burn rate, and an **Add credits** button, in the colour you choose.
-- **Warnings** under the banner for credits running out, keys near or at their limit, expiring keys and a passed monthly budget. Each closes with an ×.
-- Three tabs:
-  - **Usage**: today and this month (with an optional monthly budget), a daily chart for 7 days, 30 days or all time in Cost or Tokens, your models, the token mix and a 26-week activity heatmap. Hover a bar to read its day; click a day, in the chart or the heatmap, to see its models and token mix. Click a model for its details.
-  - **Keys**: spend per API key with its own 7D, 30D and All switch, limit meters, and badges only for keys that need attention.
-  - **Settings**: verify, replace or disconnect your key, refresh interval, alerts, budgets, the status bar item, BYOK counting, and the banner's colour and vivid switch, with a live preview.
-- An optional **DeepSeek** balance: add a DeepSeek API key in Settings and a card shows its balance and how long it lasts. Hidden when no key is saved.
-- **CSV exports** of daily totals, models or API keys from the ⋯ menu.
-- A status bar item with what you spent today (`$4.18 today`). Hover it for each account's balance and today's spend; click it to open the panel. It turns amber or red when credits run low.
-- Notifications when credits run low or a budget is passed.
+- The **credits banner** with the **OpenRouter Usage** title, the credits left, how long they last at your recent rate, and an **Add credits** button. Its colour is a setting (purple, gold, teal, rose or graphite) with a **Vivid** switch; Settings shows a half-size live preview.
+- **Warnings** under the banner, each closable with an ×: credits running short, keys near or at their limit, keys expiring or expired, a passed monthly budget, and DeepSeek running low, used up or rejected.
+- Three tabs: **Usage**, **Keys** and **Settings**.
+- **Usage**
+  - Today and this month, with an optional monthly budget meter.
+  - A one-colour daily chart for 7D, 30D or All, in Cost or Tokens. Hover a bar for that day's total; click a bar or a heatmap day to select it.
+  - **Models** in a fixed-height box that scrolls, with each model's share; click a model for its details inline.
+  - **Token mix** as four numbers (cached prompt, uncached prompt, completion, reasoning) with the cache hit rate and the prompt-to-output ratio.
+  - A 26-week **activity heatmap**.
+  - Token mix and Activity are collapsible, closed by default, each with a one-line summary. Selecting a day switches Models and Token mix to it.
+- **Keys** has its own 7D, 30D and All switch: each key's share of spend, last use, limit meter, and badges only when something needs attention. Click a key for today, this week, this month, all time, its limit, expiry and label. Keys under 1% of spend fold behind a faded button unless they need attention; inactive keys fold under an arrow.
+- **Settings** is grouped into Account, Appearance, Alerts and budgets, Status bar and Data. Account holds OpenRouter and the optional DeepSeek key, each with **Test connection**, **Replace key** and Disconnect or Remove. CSV export is in the ⋯ menu.
+- **Optional DeepSeek**: add a DeepSeek API key and a collapsible DeepSeek card appears with its balance, spent today, days left, topped up and granted amounts, and a **Top up** link. DeepSeek's API reports only a balance, so the plugin reads it every refresh; spent today is the drop since midnight UTC and days left use the last 7 days of readings, ignoring top-ups. Without a key the card is hidden.
+- A **status bar** item showing only what you spent today (OpenRouter, plus DeepSeek when it is in USD). Its tooltip lists each account's balance and today's spend; clicking it shows or hides the right sidebar. It turns amber or red when credits run low.
+- **Notifications** when credits run low or a daily or monthly budget is passed.
 
 ## Install
 
@@ -27,11 +32,15 @@ orca plugin install Lilykos/orca-openrouter-usage
 
 Orca shows what the plugin is allowed to do and asks you to approve it.
 
-Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Versions 1.3.0 and 1.4.0 add no capabilities, but Orca may ask you to review the new banner settings. Your key and settings stay with the existing install.
+Existing marketplace installs update through Orca's marketplace after its catalog indexes the new release. Versions 1.3.0 and 1.4.0 add no capabilities, but Orca may ask you to review what is new: the banner colour and Vivid settings (1.3.0) and the status bar's click action (1.4.0). Your key and settings stay with the existing install.
 
 ## Setup
 
-Open the panel and paste your management key; it is verified with OpenRouter before it is saved. The key is stored in the plugin's encrypted secrets (OS keyring) and never leaves the worker process; the panel never sees it. The Settings tab has: connection test, replace or disconnect the key, refresh interval, low-balance alert, daily budget, notifications, status bar item, and whether BYOK usage counts in spend.
+Open the panel and paste your management key; it is verified with OpenRouter before it is saved. The key is stored in Orca's encrypted secrets (OS keyring) and never leaves the worker process; the panel never sees it. Under Settings → Account you can test the connection, replace the key or disconnect it.
+
+A DeepSeek key is optional and added the same way: Settings → Account → DeepSeek, **Add DeepSeek key**. It is verified once, stored in Orca's encrypted secrets and used only to read the balance.
+
+The rest of Settings holds the refresh interval, the low-balance and daily and monthly budget alerts, notifications, whether the status bar shows today's spend, whether BYOK usage counts, and the banner's colour and Vivid switch.
 
 ## Data and limits
 
@@ -47,12 +56,15 @@ All numbers come from OpenRouter's `/credits`, `/activity` and `/keys` endpoints
 ### DeepSeek (optional)
 
 - The DeepSeek key is verified once, stored in Orca's encrypted secrets, and only used for `GET https://api.deepseek.com/user/balance`.
-- DeepSeek's API reports a balance, not usage history, so there is no per-model or daily breakdown. Days left come from balance readings over the last 7 days, ignoring top-ups, and need about 12 hours of readings.
+- DeepSeek's API reports a balance, not usage history, so there is no per-model or daily breakdown. The balance is read at every refresh.
+- **Spent today** is the drop in the balance since midnight UTC, ignoring top-ups, so it is approximate.
+- **Days left** come from balance readings over the last 7 days, ignoring top-ups, and need about 12 hours of readings.
 - Removing the key in Settings forgets it and every reading.
 
 ## If something looks wrong
 
 - **"OpenRouter rejected this key"**: the key is mistyped or revoked. Paste a new management key in Settings.
+- **"DeepSeek rejected this key"**: replace the DeepSeek key under Settings → Account.
 - **"Can't reach OpenRouter"**: you are offline or OpenRouter is down; the plugin keeps the last data and retries.
 - **"No secure key store"** (Linux): install a keyring service such as gnome-keyring, then save the key again.
 - Days (the daily chart, the heatmap, Today) follow **UTC**; Settings shows when a new day starts for you.

@@ -196,6 +196,11 @@ h2 .scope { font-weight: 400; color: var(--muted); }
 .chart .ref { stroke: var(--ref); stroke-width: 1.5; stroke-linecap: round; }
 .chart .ref-l { font-size: 10px; fill: var(--fg-2); font-weight: 600; }
 
+/* Usage sections sit in quiet cards so the page reads as a few blocks, not one long list. */
+.ucard { background: color-mix(in srgb, var(--fg) 2.5%, var(--bg)); border: 1px solid var(--hair); border-radius: 10px; padding: 10px 12px 12px; min-width: 0; }
+html.light .ucard { background: color-mix(in srgb, var(--fg) 1.8%, var(--bg)); }
+.ucard .quad > div { background: color-mix(in srgb, var(--fg) 5%, var(--bg)); }
+.ucard .mbox { border: 0; margin-bottom: -6px; }
 /* models */
 .mbox { height: 262px; overflow-y: auto; overscroll-behavior: contain; margin-top: 4px; padding: 0 6px; margin-left: -6px; margin-right: -6px; border-top: 1px solid var(--hair); border-bottom: 1px solid var(--hair); scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
 .mbox::-webkit-scrollbar { width: 6px; }
@@ -745,14 +750,14 @@ function mixHtml(rep) {
 function usageHtml(rep) {
   const seg = (list, cur, act, label) => `<div class="seg sm" role="radiogroup" aria-label="${label}">${list.map(([v, l]) => `<button type="button" role="radio" aria-checked="${cur === v}" tabindex="${cur === v ? 0 : -1}" data-act="${act}" data-val="${v}" data-fk="${act}:${v}">${l}</button>`).join('')}</div>`;
   return `${todayMonthHtml(rep)}
-    <section aria-labelledby="h-spend">
+    <section class="ucard" aria-labelledby="h-spend">
       <div class="sec-h"><h2 id="h-spend">${TOK() ? 'Tokens' : 'Spend'}</h2><div class="ctl">${seg(RANGES, state.range, 'range', 'Range')}${seg(MEASURES, state.measure, 'measure', 'Measure')}</div></div>
       <div id="u-readout">${readoutHtml(rep)}</div>
       <svg class="chart${state.model ? ' sel' : ''}" role="group" aria-label="${TOK() ? 'Daily tokens' : 'Daily spend'}. Arrow keys move, Enter selects a day."></svg>
     </section>
-    <section aria-labelledby="h-models" id="u-models">${modelsHtml(rep)}</section>
-    <section aria-labelledby="h-mix" id="u-mix">${mixHtml(rep)}</section>
-    <section aria-labelledby="h-heat">
+    <section class="ucard" aria-labelledby="h-models" id="u-models">${modelsHtml(rep)}</section>
+    <section class="ucard" aria-labelledby="h-mix" id="u-mix">${mixHtml(rep)}</section>
+    <section class="ucard" aria-labelledby="h-heat">
       <div class="sec-h"><h2 id="h-heat">Activity <span class="scope">· 26 weeks</span></h2><span class="side" id="heat-ro" aria-live="polite"></span></div>
       <svg class="heat" role="grid" aria-label="Daily ${TOK() ? 'tokens' : 'spend'} for 26 weeks. Arrow keys move, Enter selects a day."></svg>
       <div class="heat-foot"><span class="scale" aria-hidden="true">Less <i style="background:var(--h0)"></i><i style="background:var(--h1)"></i><i style="background:var(--h2)"></i><i style="background:var(--h3)"></i><i style="background:var(--h4)"></i> More</span><span>Click a day to select it</span></div>

@@ -8,6 +8,7 @@ A redesign: one answer first, detail on demand.
 - The banner stays, quieter, with the **OpenRouter Usage** title in Outfit, a display font embedded in the panel: credits left, how long they last at your recent rate, and an **Add credits** button.
 - Warnings sit under the banner, each with an × to close it: credits running out, keys near or at their limit, keys expiring or expired, and a monthly budget being passed. A closed warning comes back only when something changes, such as a new day or a new month.
 - **Usage** leads with Today and this month (with budget progress), then a one-colour daily chart with your 7-day burn drawn over the days it averages. Hover a bar to read that day's total; click it to select the day, and the Models list and Token mix switch to it.
+- Spend, Models, Token mix and Activity each sit in a quiet card, so the page reads as a few calm blocks.
 - Models sit in a fixed-height box that scrolls inside, with every model listed, so the page does not jump around. Click a model to open its details inline (requests, cost per request, change against the previous period, tokens, cache hit, cost per 1M tokens) and see its share in every bar.
 - **Token mix** is now four numbers that follow the range or the selected day: cached prompt, uncached prompt, completion and reasoning, with the cache hit rate and the prompt-to-output ratio.
 - The **activity heatmap** covers 26 weeks, follows Cost or Tokens, and selects a day when you click it, widening the range when needed.
